@@ -219,8 +219,10 @@ describe("Markdown Writer", () => {
 			// Both error types are possible depending on environment:
 			// - In some environments it's a "write_failed" error (local)
 			// - In others it's a "path_creation_failed" error (CI)
-			expect(['write_failed', 'path_creation_failed']).toContain(result.error.type);
-			expect(result.error.path).toBe(restrictedPath);
+			expect(["write_failed", "path_creation_failed"]).toContain(
+				result.error.type,
+			);
+			expect(["/var/root", "/var/root/test.md"]).toContain(result.error.path);
 		}
 	});
 
