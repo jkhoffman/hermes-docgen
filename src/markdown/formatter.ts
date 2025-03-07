@@ -85,8 +85,9 @@ export function formatMarkdown(
 
 /**
  * Format a table of contents from documentation items
+ * @internal This function is exported for testing purposes only
  */
-function formatTableOfContents(items: DocItem[], depth: number): string {
+export function formatTableOfContents(items: DocItem[], depth: number): string {
 	const getKindHeading = (kind: DocItemKind): string => {
 		switch (kind) {
 			case DocItemKind.Class:
@@ -178,8 +179,9 @@ function formatTableOfContents(items: DocItem[], depth: number): string {
 
 /**
  * Format a function as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatFunction(func: FunctionDoc, options: MarkdownOptions): string {
+export function formatFunction(func: FunctionDoc, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(func.name)}"></a>\n\n`;
 	markdown += `## ${func.name}\n\n`;
 	
@@ -211,8 +213,9 @@ function formatFunction(func: FunctionDoc, options: MarkdownOptions): string {
 
 /**
  * Format a class as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatClass(cls: ClassDoc, options: MarkdownOptions): string {
+export function formatClass(cls: ClassDoc, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(cls.name)}"></a>\n\n`;
 	markdown += `## ${cls.name}\n\n`;
 	
@@ -282,8 +285,9 @@ function formatClass(cls: ClassDoc, options: MarkdownOptions): string {
 
 /**
  * Format an interface as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatInterface(iface: InterfaceDoc, options: MarkdownOptions): string {
+export function formatInterface(iface: InterfaceDoc, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(iface.name)}"></a>\n\n`;
 	markdown += `## ${iface.name}\n\n`;
 	
@@ -340,8 +344,9 @@ function formatInterface(iface: InterfaceDoc, options: MarkdownOptions): string 
 
 /**
  * Format an enum as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatEnum(enumDoc: EnumDoc, options: MarkdownOptions): string {
+export function formatEnum(enumDoc: EnumDoc, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(enumDoc.name)}"></a>\n\n`;
 	markdown += `## ${enumDoc.name}\n\n`;
 	
@@ -392,8 +397,9 @@ function formatEnum(enumDoc: EnumDoc, options: MarkdownOptions): string {
 
 /**
  * Format a type alias as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatTypeAlias(typeAlias: TypeAliasDoc, options: MarkdownOptions): string {
+export function formatTypeAlias(typeAlias: TypeAliasDoc, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(typeAlias.name)}"></a>\n\n`;
 	markdown += `## ${typeAlias.name}\n\n`;
 	
@@ -421,8 +427,9 @@ function formatTypeAlias(typeAlias: TypeAliasDoc, options: MarkdownOptions): str
 
 /**
  * Format a property as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatProperty(prop: PropertyDoc, parentName: string, options: MarkdownOptions): string {
+export function formatProperty(prop: PropertyDoc, parentName: string, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(`${parentName}-${prop.name}`)}"></a>\n\n`;
 	markdown += `#### ${prop.name}\n\n`;
 	
@@ -459,8 +466,9 @@ function formatProperty(prop: PropertyDoc, parentName: string, options: Markdown
 
 /**
  * Format a method as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatMethod(method: MethodDoc, parentName: string, options: MarkdownOptions): string {
+export function formatMethod(method: MethodDoc, parentName: string, options: MarkdownOptions): string {
 	let markdown = `<a id="${getSlug(`${parentName}-${method.name}`)}"></a>\n\n`;
 	markdown += `#### ${method.name}\n\n`;
 	
@@ -488,8 +496,9 @@ function formatMethod(method: MethodDoc, parentName: string, options: MarkdownOp
 
 /**
  * Format parameters as Markdown
+ * @internal This function is exported for testing purposes only
  */
-function formatParameters(parameters: ParameterDoc[], options: MarkdownOptions): string {
+export function formatParameters(parameters: ParameterDoc[], options: MarkdownOptions): string {
 	let markdown = "";
 	
 	for (const param of parameters) {
@@ -522,8 +531,9 @@ function formatParameters(parameters: ParameterDoc[], options: MarkdownOptions):
 
 /**
  * Format a function signature
+ * @internal This function is exported for testing purposes only
  */
-function formatFunctionSignature(func: FunctionDoc): string {
+export function formatFunctionSignature(func: FunctionDoc): string {
 	let signature = `function ${func.name}`;
 	
 	if (func.typeParameters && func.typeParameters.length > 0) {
@@ -563,8 +573,9 @@ function formatFunctionSignature(func: FunctionDoc): string {
 
 /**
  * Format a method signature
+ * @internal This function is exported for testing purposes only
  */
-function formatMethodSignature(method: MethodDoc): string {
+export function formatMethodSignature(method: MethodDoc): string {
 	let signature = "";
 	
 	if (method.isStatic) {
@@ -614,8 +625,9 @@ function formatMethodSignature(method: MethodDoc): string {
 
 /**
  * Create a slug from a string
+ * @internal This function is exported for testing purposes only
  */
-function getSlug(text: string): string {
+export function getSlug(text: string): string {
 	return text
 		.toLowerCase()
 		.replace(/[^\w\s-]/g, "")

@@ -147,6 +147,7 @@ export interface ParameterDoc extends DocItem {
 
 /**
  * Extract documentation from a source file
+ * @internal This function is exported for testing purposes only
  */
 export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 	const items: DocItem[] = [];
@@ -358,8 +359,9 @@ function extractInterfaceMethods(iface: InterfaceDeclaration): MethodDoc[] {
 
 /**
  * Extract parameter documentation
+ * @internal This function is exported for testing purposes only
  */
-function extractParameterDoc(param: ParameterDeclaration): ParameterDoc {
+export function extractParameterDoc(param: ParameterDeclaration): ParameterDoc {
 	return {
 		name: param.getName(),
 		kind: DocItemKind.Parameter,
@@ -376,8 +378,9 @@ function extractParameterDoc(param: ParameterDeclaration): ParameterDoc {
 
 /**
  * Parse JSDoc comments into structured information
+ * @internal This function is exported for testing purposes only
  */
-function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undefined {
+export function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undefined {
 	if (!jsDocs || jsDocs.length === 0) {
 		return undefined;
 	}
