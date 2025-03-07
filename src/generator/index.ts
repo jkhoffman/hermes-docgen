@@ -3,13 +3,9 @@ import { type Result, err, ok } from "neverthrow";
 import type { SourceFile } from "ts-morph";
 
 import type { HermesConfig } from "../config";
-import {
-	type MarkdownOptions,
-	formatMarkdown,
-	generateFilePath,
-	writeFile,
-} from "../markdown";
+import { formatMarkdown, generateFilePath, writeFile } from "../markdown";
 import { type ParserError, TypeScriptParser } from "../parser";
+import type { MarkdownOptions } from "../parser/models";
 import {
 	type DocItem,
 	extractDocumentation as extractFromSourceFile,

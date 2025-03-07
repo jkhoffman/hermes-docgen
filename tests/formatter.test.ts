@@ -10,25 +10,30 @@ import {
 	MethodDoc,
 	ParameterDoc,
 	PropertyDoc,
-	TypeAliasDoc
-} from "../src/parser/traversal";
+	TypeAliasDoc,
+	MarkdownOptions
+} from "../src/parser/models";
 
 // We're no longer mocking the formatter, but testing the actual implementation
-import { formatMarkdown, MarkdownOptions } from "../src/markdown";
+import { formatMarkdown } from "../src/markdown";
+import { formatTableOfContents } from "../src/markdown/formatters/toc";
+import { getSlug } from "../src/markdown/formatters/utils";
 import {
-	formatTableOfContents,
-	getSlug,
 	formatFunction,
-	formatFunctionSignature,
 	formatClass,
 	formatInterface,
 	formatEnum,
-	formatTypeAlias,
+	formatTypeAlias
+} from "../src/markdown/formatters/items";
+import {
+	formatFunctionSignature,
+	formatMethodSignature
+} from "../src/markdown/formatters/declarations";
+import {
 	formatProperty,
 	formatMethod,
-	formatParameters,
-	formatMethodSignature
-} from "../src/markdown/formatter";
+	formatParameters
+} from "../src/markdown/formatters/members";
 
 describe("Markdown Formatter", () => {
 	// Helper function to create basic markdown options
