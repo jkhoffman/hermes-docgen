@@ -4,80 +4,109 @@ This document outlines the essential tasks for delivering the first version (v0.
 
 ## Project Setup
 
-- [ ] Initialize TypeScript project with proper tsconfig.json
-- [ ] Configure Biome for formatting and linting
-- [ ] Set up Jest/Vitest for testing framework
+- [x] Initialize TypeScript project with proper tsconfig.json
+- [x] Configure Biome for formatting and linting
+- [x] Set up Jest/Vitest for testing framework
 - [ ] Create GitHub repository with proper structure
 - [ ] Configure CI/CD pipeline for basic testing
-- [ ] Set up package.json with proper dependencies
-- [ ] Create developer documentation for setup
+- [x] Set up package.json with proper dependencies
+- [x] Create developer documentation for setup
 
 ## Core Infrastructure
 
-- [ ] Implement basic CLI structure using Commander.js
-  - [ ] Define basic command structure (generate, init, help)
-  - [ ] Set up command argument and option parsing
-  - [ ] Create help text and documentation
-  - [ ] Implement error handling for CLI
+- [x] Implement basic CLI structure using Commander.js
+  - [x] Define basic command structure (generate, init, help)
+  - [x] Set up command argument and option parsing
+  - [x] Create help text and documentation
+  - [x] Implement error handling for CLI
 
-- [ ] Create configuration system
-  - [ ] Define minimal configuration schema with Zod
-  - [ ] Implement configuration loading with cosmiconfig
-  - [ ] Add support for CLI overrides of config options
-  - [ ] Create default configuration
+- [x] Create configuration system
+  - [x] Define minimal configuration schema with Zod
+  - [x] Implement configuration loading with cosmiconfig
+  - [x] Add support for CLI overrides of config options
+  - [x] Create default configuration
 
 ## TypeScript Parsing
 
-- [ ] Integrate ts-morph for TypeScript parsing
-  - [ ] Set up Project class wrapper
-  - [ ] Implement basic file loading from patterns
-  - [ ] Create source file processing pipeline
+- [x] Integrate ts-morph for TypeScript parsing
+  - [x] Set up Project class wrapper
+  - [x] Implement basic file loading from patterns
+  - [x] Create source file processing pipeline
 
-- [ ] Create basic AST traversal system
-  - [ ] Parse functions and their signatures
-  - [ ] Extract basic types and interfaces
-  - [ ] Collect basic JSDoc comments
-  - [ ] Create data structures for documentation objects
+- [x] Create basic AST traversal system
+  - [x] Parse functions and their signatures
+  - [x] Extract basic types and interfaces
+  - [x] Collect basic JSDoc comments
+  - [x] Create data structures for documentation objects
 
 ## Markdown Generation
 
-- [ ] Implement Markdown generation system
-  - [ ] Create basic Markdown templates
-  - [ ] Implement function signature formatting
-  - [ ] Add basic linking between documents
-  - [ ] Generate table of contents
+- [x] Implement Markdown generation system
+  - [x] Create basic Markdown templates
+  - [x] Implement function signature formatting
+  - [x] Add basic linking between documents
+  - [x] Generate table of contents
 
-- [ ] Set up file output system
-  - [ ] Implement file path resolution
-  - [ ] Create directory structure
-  - [ ] Handle file writing with proper error handling
+- [x] Set up file output system
+  - [x] Implement file path resolution
+  - [x] Create directory structure
+  - [x] Handle file writing with proper error handling
 
 ## Testing
 
-- [ ] Write unit tests for core components
-  - [ ] CLI command tests
-  - [ ] Configuration loading tests
-  - [ ] TypeScript parsing tests
-  - [ ] Markdown generation tests
+- [x] Write unit tests for core components
+  - [x] CLI command tests
+  - [x] Configuration loading tests
+  - [x] TypeScript parsing tests
+  - [x] Markdown generation tests
 
-- [ ] Create integration tests
-  - [ ] End-to-end test with simple TypeScript file
-  - [ ] Test with sample project
+- [x] Create integration tests
+  - [x] End-to-end test with simple TypeScript file
+  - [x] Test with sample project
 
 ## Documentation
 
-- [ ] Create project README.md
-- [ ] Write usage documentation
-- [ ] Document configuration options
-- [ ] Add contributing guidelines
+- [x] Create project README.md
+- [x] Write usage documentation
+- [x] Document configuration options
+- [x] Add contributing guidelines
 
 ## Release Preparation
 
-- [ ] Perform code review of all components
-- [ ] Run full test suite
-- [ ] Test with sample TypeScript projects
+- [x] Perform code review of all components
+- [x] Run full test suite
+- [x] Test with sample TypeScript projects
 - [ ] Create v0.1.0 tag and release
 - [ ] Publish package to npm
+
+## Future Improvements (v0.2.0+)
+
+- [ ] CLI Improvements:
+  - [ ] Add progress indicators for the generate command
+  - [ ] Extract command handlers to separate modules
+  - [ ] Add more customization options for the init command
+
+- [ ] Configuration Enhancements:
+  - [ ] Improve nested configuration merging (deep merge)
+  - [ ] Add validation for file paths
+
+- [ ] Parser Refinements:
+  - [ ] Add handling for namespaces
+  - [ ] Populate parameter descriptions from function JSDoc @param tags
+  - [ ] Add better handling for JSDoc @example tags
+  - [ ] Reduce code duplication in traversal functions
+  - [ ] Fix typing issue with `sourceFile: any`
+
+- [ ] Markdown Formatting:
+  - [ ] Use GitHub-flavored markdown heading links
+  - [ ] Support deeper nesting in the table of contents
+  - [ ] Use relative paths in source links
+  - [ ] Add rendering for @example JSDoc tags
+
+- [ ] Generator Improvements:
+  - [ ] Use more unique identifiers for file grouping
+  - [ ] Add more specific error types and context
+  - [ ] Implement AI integration features
 
 ## Success Criteria
 

@@ -1,8 +1,11 @@
 {
 	"name": "hermes-docgen",
-	"version": "0.0.1",
-	"description": "",
-	"main": "index.js",
+	"version": "0.1.0",
+	"description": "AI-powered documentation generator for TypeScript",
+	"main": "dist/index.js",
+	"bin": {
+		"hermes": "dist/index.js"
+	},
 	"scripts": {
 		"start": "tsx src/index.ts",
 		"dev": "tsx watch src/index.ts",
