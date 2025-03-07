@@ -155,6 +155,6 @@ export class DocumentationGenerator {
 /**
  * Extract documentation from a source file
  */
-function extractDocumentation(sourceFile: any): DocItem[] {
+function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 	return extractFromSourceFile(sourceFile);
 }
