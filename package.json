@@ -8,24 +8,20 @@
 	},
 	"scripts": {
 		"start": "tsx src/index.ts",
-		"lint": "biome check src",
-		"lint:fix": "biome check --fix src",
-		"format": "biome format src",
-		"format:fix": "biome format --fix src",
-		"check": "biome check src",
-		"check:fix": "biome check --fix src",
-		"check:unsafe": "biome check --fix --unsafe src",
+		"lint": "pnpx @biomejs/biome check src",
+		"lint:fix": "pnpx @biomejs/biome check --fix src",
+		"format": "pnpx @biomejs/biome format src",
+		"format:fix": "pnpx @biomejs/biome format --fix src",
+		"check": "pnpx @biomejs/biome check src",
+		"check:fix": "pnpx @biomejs/biome check --fix src",
+		"check:unsafe": "pnpx @biomejs/biome check --fix --unsafe src",
 		"test": "vitest run --test-timeout=10000",
 		"test:coverage": "vitest run --coverage",
 		"build": "rimraf dist && tsc",
 		"clean": "rimraf dist",
 		"prepare": "husky"
 	},
-	"keywords": [
-		"ai",
-		"documentation",
-		"typescript"
-	],
+	"keywords": ["ai", "documentation", "typescript"],
 	"author": "Jeffery K. Hoffman <jkhoffman@gmail.com>",
 	"license": "ISC",
 	"packageManager": "pnpm@10.5.2",
@@ -59,8 +55,6 @@
 		"vitest": "^3.0.8"
 	},
 	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@biomejs/biome"
-		]
+		"onlyBuiltDependencies": ["@biomejs/biome"]
 	}
 }
