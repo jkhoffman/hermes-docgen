@@ -216,7 +216,11 @@ describe("Markdown Writer", () => {
 
 		// This will likely fail unless the test is running as root
 		if (result.isErr()) {
-			expect(result.error.type).toBe("path_creation_failed");
+			// Both error types are possible depending on environment:
+			// - In some environments it's a "write_failed" error (local)
+			// - In others it's a "path_creation_failed" error (CI)
+			expect(['write_failed', 'path_creation_failed']).toContain(result.error.type);
+			expect(result.error.path).toBe(restrictedPath);
 		}
 	});
 
