@@ -1,6 +1,6 @@
-# Hermes v0.1.0 TODO List
+# Hermes TODO List
 
-This document outlines the essential tasks for delivering the first version (v0.1.0) of Hermes, our AI-powered documentation generator for TypeScript. The focus for this version is establishing the core foundations of the project.
+This document outlines the tasks for Hermes, our AI-powered documentation generator for TypeScript. Version 0.1.0 has been released, establishing the core foundations of the project.
 
 ## Project Setup
 
@@ -76,7 +76,7 @@ This document outlines the essential tasks for delivering the first version (v0.
 - [x] Perform code review of all components
 - [x] Run full test suite
 - [x] Test with sample TypeScript projects
-- [ ] Create v0.1.0 tag and release
+- [x] Create v0.1.0 tag and release
   - After pushing to GitHub, create a new release with tag v0.1.0
   - Include release notes summarizing the features in v0.1.0
 - [ ] Publish package to npm
