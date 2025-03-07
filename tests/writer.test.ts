@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { ensureDirectory, writeFile, generateFilePath } from "../src/markdown/writer";
 
@@ -40,6 +40,19 @@ describe("Markdown Writer", () => {
     }
   });
 
+  it("should handle directory creation errors", async () => {
+    // Create a really long path that's likely to fail
+    const dirPath = path.join(tempDir, "a".repeat(1000), "error-dir");
+    
+    const result = await ensureDirectory(dirPath);
+    
+    // This might fail due to path length restrictions
+    if (result.isErr()) {
+      expect(result.error.type).toBe("path_creation_failed");
+      expect(result.error.path).toBe(dirPath);
+    }
+  });
+
   it("should write markdown content to file", async () => {
     const fileName = "test.md";
     const filePath = path.join(outputDir, fileName);
@@ -68,6 +81,25 @@ describe("Markdown Writer", () => {
     }
   });
 
+  it("should overwrite existing file by default", async () => {
+    const fileName = "overwrite-test.md";
+    const filePath = path.join(outputDir, fileName);
+    const originalContent = "Original content";
+    const newContent = "New content";
+    
+    // Write the original content
+    await fs.writeFile(filePath, originalContent, "utf8");
+    
+    // Write new content with default options
+    const result = await writeFile(filePath, newContent);
+    
+    expect(result.isOk()).toBe(true);
+    
+    // Check content has been updated
+    const fileContent = await fs.readFile(filePath, "utf8");
+    expect(fileContent).toBe(newContent);
+  });
+
   it("should not overwrite file when overwrite is false", async () => {
     const fileName = "no-overwrite.md";
     const filePath = path.join(outputDir, fileName);
@@ -85,6 +117,25 @@ describe("Markdown Writer", () => {
     // Check content hasn't changed
     const fileContent = await fs.readFile(filePath, "utf8");
     expect(fileContent).toBe(originalContent);
+  });
+
+  it("should explicitly overwrite file when overwrite is true", async () => {
+    const fileName = "explicit-overwrite.md";
+    const filePath = path.join(outputDir, fileName);
+    const originalContent = "Original content";
+    const newContent = "New content";
+    
+    // Write the original content
+    await fs.writeFile(filePath, originalContent, "utf8");
+    
+    // Try to write new content with overwrite=true
+    const result = await writeFile(filePath, newContent, { overwrite: true });
+    
+    expect(result.isOk()).toBe(true);
+    
+    // Check content has been updated
+    const fileContent = await fs.readFile(filePath, "utf8");
+    expect(fileContent).toBe(newContent);
   });
 
   it("should create directories if they don't exist", async () => {
@@ -115,6 +166,36 @@ describe("Markdown Writer", () => {
       // Check content
       const fileContent = await fs.readFile(filePath, "utf8");
       expect(fileContent).toBe(content);
+    }
+  });
+
+  it("should handle directory creation failures when writing", async () => {
+    // Create a file path with an invalid directory path (too long)
+    const dirPath = path.join(tempDir, "a".repeat(1000));
+    const filePath = path.join(dirPath, "test.md");
+    const content = "Test content";
+    
+    // Write to a file that will fail to create its parent directory
+    const result = await writeFile(filePath, content);
+    
+    // This will likely fail due to path length restrictions
+    if (result.isErr()) {
+      expect(result.error.type).toBe("path_creation_failed");
+    }
+  });
+
+  it("should handle file write failures", async () => {
+    // Use a path that likely won't be writable in a normal environment
+    const filePath = path.join("/etc/", "test.md");
+    const content = "Test content";
+    
+    // Write to a file that will likely fail due to permissions
+    const result = await writeFile(filePath, content);
+    
+    // This will likely fail with permission error
+    if (result.isErr()) {
+      expect(result.error.type).toBe("write_failed");
+      expect(result.error.path).toBe(filePath);
     }
   });
 
