@@ -154,7 +154,32 @@ export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 	
 	// Extract functions
 	for (const func of sourceFile.getFunctions()) {
-		const parameters: ParameterDoc[] = func.getParameters().map(param => extractParameterDoc(param));
+		// Get JSDoc comments
+		const jsDocs = func.getJsDocs();
+		const jsDocInfo = extractJSDocInfo(jsDocs);
+		
+		// Extract basic parameter information
+		const parameters: ParameterDoc[] = func.getParameters().map(param => {
+			// Get basic parameter info
+			const paramDoc = extractParameterDoc(param);
+			
+			// Extract description from JSDoc
+			const description = extractParameterDescription(param, jsDocs);
+			if (description) {
+				paramDoc.description = description;
+			}
+			// Fallback to using the parsed JSDoc info if direct method didn't work
+			else if (jsDocInfo?.tags) {
+				const paramTag = jsDocInfo.tags.find(
+					tag => tag.tag === "param" && tag.name === param.getName()
+				);
+				if (paramTag?.description) {
+					paramDoc.description = paramTag.description;
+				}
+			}
+			
+			return paramDoc;
+		});
 		
 		items.push({
 			name: func.getName() || "anonymous",
@@ -164,7 +189,7 @@ export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 				filePath: sourceFile.getFilePath(),
 				line: func.getStartLineNumber(),
 			},
-			jsDoc: extractJSDocInfo(func.getJsDocs()),
+			jsDoc: jsDocInfo,
 			parameters,
 			returnType: func.getReturnType().getText(),
 			typeParameters: func.getTypeParameters().map(tp => tp.getText()),
@@ -191,7 +216,32 @@ export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 		});
 		
 		const methods: MethodDoc[] = cls.getMethods().map(method => {
-			const parameters: ParameterDoc[] = method.getParameters().map(param => extractParameterDoc(param));
+			// Get JSDoc comments
+			const methodJsDocs = method.getJsDocs();
+			const methodJsDocInfo = extractJSDocInfo(methodJsDocs);
+			
+			// Extract basic parameter information with JSDoc descriptions
+			const parameters: ParameterDoc[] = method.getParameters().map(param => {
+				// Get basic parameter info
+				const paramDoc = extractParameterDoc(param);
+				
+				// Extract description from JSDoc
+				const description = extractParameterDescription(param, methodJsDocs);
+				if (description) {
+					paramDoc.description = description;
+				}
+				// Fallback to using the parsed JSDoc info if direct method didn't work
+				else if (methodJsDocInfo?.tags) {
+					const paramTag = methodJsDocInfo.tags.find(
+						tag => tag.tag === "param" && tag.name === param.getName()
+					);
+					if (paramTag?.description) {
+						paramDoc.description = paramTag.description;
+					}
+				}
+				
+				return paramDoc;
+			});
 			
 			return {
 				name: method.getName(),
@@ -201,17 +251,42 @@ export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 					filePath: sourceFile.getFilePath(),
 					line: method.getStartLineNumber(),
 				},
-				jsDoc: extractJSDocInfo(method.getJsDocs()),
+				jsDoc: methodJsDocInfo,
 				parameters,
 				returnType: method.getReturnType().getText(),
 				isStatic: method.isStatic(),
-				isAsync: false, // Interface methods can't be async in TypeScript
+				isAsync: method.isAsync(), // Check if the method is async
 				typeParameters: method.getTypeParameters().map(tp => tp.getText()),
 			} as MethodDoc;
 		});
 		
 		const constructors: MethodDoc[] = cls.getConstructors().map(ctor => {
-			const parameters: ParameterDoc[] = ctor.getParameters().map(param => extractParameterDoc(param));
+			// Get JSDoc comments for constructor
+			const ctorJsDocs = ctor.getJsDocs();
+			const ctorJsDocInfo = extractJSDocInfo(ctorJsDocs);
+			
+			// Extract basic parameter information with JSDoc descriptions
+			const parameters: ParameterDoc[] = ctor.getParameters().map(param => {
+				// Get basic parameter info
+				const paramDoc = extractParameterDoc(param);
+				
+				// Extract description from JSDoc
+				const description = extractParameterDescription(param, ctorJsDocs);
+				if (description) {
+					paramDoc.description = description;
+				}
+				// Fallback to using the parsed JSDoc info if direct method didn't work
+				else if (ctorJsDocInfo?.tags) {
+					const paramTag = ctorJsDocInfo.tags.find(
+						tag => tag.tag === "param" && tag.name === param.getName()
+					);
+					if (paramTag?.description) {
+						paramDoc.description = paramTag.description;
+					}
+				}
+				
+				return paramDoc;
+			});
 			
 			return {
 				name: "constructor",
@@ -221,7 +296,7 @@ export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 					filePath: sourceFile.getFilePath(),
 					line: ctor.getStartLineNumber(),
 				},
-				jsDoc: extractJSDocInfo(ctor.getJsDocs()),
+				jsDoc: ctorJsDocInfo,
 				parameters,
 				returnType: cls.getName(),
 				isStatic: false,
@@ -337,7 +412,32 @@ function extractInterfaceProperties(iface: InterfaceDeclaration): PropertyDoc[] 
  */
 function extractInterfaceMethods(iface: InterfaceDeclaration): MethodDoc[] {
 	return iface.getMethods().map(method => {
-		const parameters: ParameterDoc[] = method.getParameters().map(param => extractParameterDoc(param));
+		// Get JSDoc comments for the method
+		const methodJsDocs = method.getJsDocs();
+		const methodJsDocInfo = extractJSDocInfo(methodJsDocs);
+		
+		// Extract basic parameter information with JSDoc descriptions
+		const parameters: ParameterDoc[] = method.getParameters().map(param => {
+			// Get basic parameter info
+			const paramDoc = extractParameterDoc(param);
+			
+			// Extract description from JSDoc
+			const description = extractParameterDescription(param, methodJsDocs);
+			if (description) {
+				paramDoc.description = description;
+			}
+			// Fallback to using the parsed JSDoc info if direct method didn't work
+			else if (methodJsDocInfo?.tags) {
+				const paramTag = methodJsDocInfo.tags.find(
+					tag => tag.tag === "param" && tag.name === param.getName()
+				);
+				if (paramTag?.description) {
+					paramDoc.description = paramTag.description;
+				}
+			}
+			
+			return paramDoc;
+		});
 		
 		return {
 			name: method.getName(),
@@ -347,11 +447,11 @@ function extractInterfaceMethods(iface: InterfaceDeclaration): MethodDoc[] {
 				filePath: method.getSourceFile().getFilePath(),
 				line: method.getStartLineNumber(),
 			},
-			jsDoc: extractJSDocInfo(method.getJsDocs()),
+			jsDoc: methodJsDocInfo,
 			parameters,
 			returnType: method.getReturnType().getText(),
 			isStatic: false,
-			isAsync: false, // Interface methods cannot be async,
+			isAsync: false, // Interface methods cannot be async
 			typeParameters: method.getTypeParameters().map(tp => tp.getText()),
 		} as MethodDoc;
 	});
@@ -377,6 +477,59 @@ export function extractParameterDoc(param: ParameterDeclaration): ParameterDoc {
 }
 
 /**
+ * Extracts parameter description from JSDoc tags
+ * @internal This function is exported for testing purposes only
+ */
+export function extractParameterDescription(param: ParameterDeclaration, jsDocs: JSDoc[] | undefined): string {
+	if (!jsDocs || jsDocs.length === 0) {
+		return "";
+	}
+	
+	const paramName = param.getName();
+	
+	// Look through each JSDoc block
+	for (const jsDoc of jsDocs) {
+		// Get the tags
+		const tags = jsDoc.getTags();
+		
+		// Look for a @param tag that matches this parameter
+		for (const tag of tags) {
+			if (tag.getTagName() === "param") {
+				const tagText = tag.getText();
+				
+				// Extract the parameter name from the tag text
+				// The tagText may include the entire tag: "@param paramName description"
+				// or it might just be "paramName description"
+				const paramRegex = new RegExp(`(?:@param\\s+)?(${paramName})\\b\\s*(.+)?`, "i");
+				const match = tagText.match(paramRegex);
+				
+				if (match && match[1] === paramName) {
+					try {
+						// Try to get the comment using the tag's getComment() method
+						const comment = tag.getComment?.();
+						if (comment) {
+							return comment.trim();
+						}
+						
+						// If no getComment or it returned empty, but we matched in the regex
+						if (match[2]) {
+							return match[2].trim();
+						}
+					} catch (e) {
+						// Fallback for tests with mocked objects
+						if (match[2]) {
+							return match[2].trim();
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return "";
+}
+
+/**
  * Parse JSDoc comments into structured information
  * @internal This function is exported for testing purposes only
  */
@@ -389,33 +542,61 @@ export function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undef
 	const jsDoc = jsDocs[0];
 	const commentText = jsDoc.getDescription();
 	
-	try {
-		// Use comment-parser to parse the JSDoc
-		const parsed = parseJSDoc(`/**\n * ${commentText}\n * ${jsDoc.getTags().map(tag => `@${tag.getTagName()} ${tag.getText()}`).join("\n * ")}\n */`);
+	// Extract tags directly from ts-morph
+	const tags: JSDocTag[] = [];
+	
+	for (const tag of jsDoc.getTags()) {
+		const tagName = tag.getTagName();
 		
-		if (parsed.length === 0) {
-			return undefined;
-		}
-		
-		const parsedComment = parsed[0];
-		
-		return {
-			description: parsedComment.description,
-			tags: parsedComment.tags.map(tag => ({
-				tag: tag.tag,
-				name: tag.name,
-				description: tag.description,
-			})),
-		};
-	} catch (error) {
-		// Return a simpler version if parsing fails
-		return {
-			description: commentText,
-			tags: jsDoc.getTags().map(tag => ({
-				tag: tag.getTagName(),
+		if (tagName === "param") {
+			// For param tags, extract the parameter name from the tag text
+			const tagText = tag.getText();
+			const paramMatch = tagText.match(/^(\w+)(?:\s+.*)?$/);
+			
+			// Try to get comment using getComment (available in actual code)
+			let comment = "";
+			try {
+				comment = tag.getComment?.() || "";
+			} catch (e) {
+				// Fallback for tests with mocked objects
+				comment = tagText.replace(/^\w+\s*/, "").trim();
+			}
+			
+			if (paramMatch) {
+				const paramName = paramMatch[1];
+				tags.push({
+					tag: "param",
+					name: paramName,
+					description: comment.trim(),
+				});
+			} else {
+				// Fallback if we can't extract the parameter name
+				tags.push({
+					tag: "param",
+					name: "",
+					description: comment.trim(),
+				});
+			}
+		} else {
+			// For other tags, just use the comment
+			let comment = "";
+			try {
+				comment = tag.getComment?.() || "";
+			} catch (e) {
+				// Fallback for tests with mocked objects
+				comment = tag.getText().trim();
+			}
+			
+			tags.push({
+				tag: tagName,
 				name: "",
-				description: tag.getText(),
-			})),
-		};
+				description: comment,
+			});
+		}
 	}
+	
+	return {
+		description: commentText,
+		tags,
+	};
 }

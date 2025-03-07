@@ -22,7 +22,8 @@ import {
 import { 
 	extractDocumentation,
 	extractJSDocInfo,
-	extractParameterDoc 
+	extractParameterDoc,
+	extractParameterDescription
 } from "../src/parser/traversal";
 
 // Helper to create a source file from code
@@ -250,11 +251,13 @@ describe("traversal.ts", () => {
 				getTags: vi.fn().mockReturnValue([
 					{
 						getTagName: vi.fn().mockReturnValue("param"),
-						getText: vi.fn().mockReturnValue("input - Test parameter")
+						getText: vi.fn().mockReturnValue("input Test parameter"),
+						getComment: vi.fn().mockReturnValue("Test parameter")
 					},
 					{
 						getTagName: vi.fn().mockReturnValue("returns"),
-						getText: vi.fn().mockReturnValue("Test return value")
+						getText: vi.fn().mockReturnValue("Test return value"),
+						getComment: vi.fn().mockReturnValue("Test return value")
 					}
 				])
 			} as unknown as JSDoc;
@@ -271,7 +274,13 @@ describe("traversal.ts", () => {
 			// Mock a JSDoc object that would cause the parser to throw
 			const mockJSDoc = {
 				getDescription: vi.fn().mockReturnValue("Test {invalid} description"),
-				getTags: vi.fn().mockReturnValue([]) // Don't throw directly in getTags
+				getTags: vi.fn().mockReturnValue([
+					{
+						getTagName: vi.fn().mockReturnValue("param"),
+						getText: vi.fn().mockReturnValue("input Test parameter"),
+						getComment: vi.fn().mockImplementation(() => { throw new Error("Test error"); })
+					}
+				])
 			} as unknown as JSDoc;
 
 			// Mock comment-parser to throw an error
@@ -284,10 +293,75 @@ describe("traversal.ts", () => {
 			const result = extractJSDocInfo([mockJSDoc]);
 			expect(result).toBeDefined();
 			expect(result?.description).toBe("Test {invalid} description");
-			expect(result?.tags).toEqual([]);
+			expect(result?.tags.length).toBe(1);
 			
 			// Restore the original implementation
 			vi.restoreAllMocks();
+		});
+	});
+	
+	describe("extractParameterDescription", () => {
+		it("should extract parameter descriptions directly", () => {
+			// Create a function with JSDoc parameter descriptions
+			const sourceFile = createSourceFile(`
+				/**
+				 * Test function with parameter descriptions
+				 * @param first The first parameter
+				 * @param second The second parameter with more details
+				 * @returns The return value
+				 */
+				function test(first: string, second: number) {
+					return first + second;
+				}
+			`);
+			
+			const func = sourceFile.getFunction("test");
+			if (!func) {
+				throw new Error("Function not found in test code");
+			}
+			
+			// Get parameters
+			const params = func.getParameters();
+			expect(params.length).toBe(2);
+			
+			// Get JSDoc blocks
+			const jsDocs = func.getJsDocs();
+			expect(jsDocs.length).toBeGreaterThan(0);
+			
+			// Try our helper function
+			const firstParamDesc = extractParameterDescription(params[0], jsDocs);
+			const secondParamDesc = extractParameterDescription(params[1], jsDocs);
+			
+			// Check our extraction results
+			expect(firstParamDesc).toBe("The first parameter");
+			expect(secondParamDesc).toBe("The second parameter with more details");
+		});
+
+		it("should extract parameter descriptions from function documentation", () => {
+			// Create a function with JSDoc parameter descriptions
+			const sourceFile = createSourceFile(`
+				/**
+				 * Test function with parameter descriptions
+				 * @param first The first parameter
+				 * @param second The second parameter with more details
+				 * @returns The return value
+				 */
+				function test(first: string, second: number) {
+					return first + second;
+				}
+			`);
+			
+			// Extract all function documentation
+			const docItems = extractDocumentation(sourceFile);
+			expect(docItems.length).toBe(1);
+			
+			const funcDoc = docItems[0] as any;
+			expect(funcDoc.kind).toBe(DocItemKind.Function);
+			expect(funcDoc.parameters.length).toBe(2);
+			
+			// Check that parameter descriptions were populated from JSDoc
+			expect(funcDoc.parameters[0].description).toBe("The first parameter");
+			expect(funcDoc.parameters[1].description).toBe("The second parameter with more details");
 		});
 	});
 
