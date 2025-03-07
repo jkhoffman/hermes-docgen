@@ -84,41 +84,86 @@ This document outlines the tasks for Hermes, our AI-powered documentation genera
   - Add the NPM token as a secret named NPM_TOKEN in the GitHub repository
   - The GitHub workflow will handle publishing when a release is created
 
-## Future Improvements (v0.2.0+)
+## Version 0.2.0 - Enhanced Parsing
 
-- [ ] CLI Improvements:
-  - [ ] Add progress indicators for the generate command
-  - [ ] Extract command handlers to separate modules
-  - [ ] Add more customization options for the init command
+**Objectives**: Improve TypeScript parsing and Markdown generation.
 
-- [ ] Configuration Enhancements:
-  - [ ] Improve nested configuration merging (deep merge)
-  - [ ] Add validation for file paths
+### Features
 
-- [ ] Parser Refinements:
+- [ ] Extended TypeScript parsing
+  - [ ] Enhance handling for classes with methods and properties
+  - [ ] Improve interface parsing with property descriptions
+  - [ ] Add robust type alias support
   - [ ] Add handling for namespaces
   - [ ] Populate parameter descriptions from function JSDoc @param tags
-  - [ ] Add better handling for JSDoc @example tags
-  - [ ] Reduce code duplication in traversal functions
-  - [ ] Fix typing issue with `sourceFile: any`
-
-- [ ] Markdown Formatting:
+  - [ ] Add handling for JSDoc @example tags
+  
+- [ ] JSDoc comment extraction
+  - [ ] Implement comment-parser for JSDoc extraction
+  - [ ] Parse all standard JSDoc tags (@param, @returns, @example, etc.)
+  - [ ] Link JSDoc references to their definitions
+  
+- [ ] Basic documentation structure
+  - [ ] Organize documentation by module structure
+  - [ ] Create index files for navigation
+  - [ ] Generate breadcrumb navigation
+  
+- [ ] Improved Markdown formatting
   - [ ] Use GitHub-flavored markdown heading links
   - [ ] Support deeper nesting in the table of contents
   - [ ] Use relative paths in source links
-  - [ ] Add rendering for @example JSDoc tags
+  - [ ] Add rendering for JSDoc @example tags
+  - [ ] Improve code block formatting with syntax highlighting
 
-- [ ] Generator Improvements:
+### Technical Implementation
+
+- [ ] Enhance TypeScript parser
+  - [ ] Reduce code duplication in traversal functions
+  - [ ] Fix typing issue with `sourceFile: any`
+  - [ ] Improve error handling with more specific types
+  
+- [ ] CLI Improvements
+  - [ ] Add progress indicators for the generate command
+  - [ ] Extract command handlers to separate modules
+  - [ ] Add more customization options for the init command
+  
+- [ ] Configuration Enhancements
+  - [ ] Improve nested configuration merging (deep merge)
+  - [ ] Add validation for file paths
+  - [ ] Support for output format options
+  
+- [ ] Generator Improvements
   - [ ] Use more unique identifiers for file grouping
   - [ ] Add more specific error types and context
-  - [ ] Implement AI integration features
+  - [ ] Support for incremental generation
 
-## Success Criteria
+### Testing
+
+- [ ] Test with complex TypeScript files
+  - [ ] Test with real-world TypeScript projects
+  - [ ] Create specific test cases for edge cases
+  
+- [ ] Verify JSDoc extraction and rendering
+  - [ ] Test with various JSDoc formats and styles
+  - [ ] Verify linking between references works correctly
+
+### Release Criteria
+
+- [ ] Successfully extract and document all major TypeScript constructs
+- [ ] Properly incorporate existing JSDoc comments into documentation
+- [ ] Documentation is well-organized and navigable
+- [ ] All tests pass with high coverage
+
+## v0.1.0 Success Criteria (Completed)
 
 For v0.1.0 to be considered complete, the following criteria must be met:
 
-1. CLI can successfully parse basic TypeScript files
-2. Documentation can be generated in Markdown format for functions
-3. Configuration can be loaded from file or CLI options
-4. All tests pass
-5. Documentation for usage is complete
+1. ✅ CLI can successfully parse basic TypeScript files
+2. ✅ Documentation can be generated in Markdown format for functions
+3. ✅ Configuration can be loaded from file or CLI options
+4. ✅ All tests pass
+5. ✅ Documentation for usage is complete
+
+## Future Versions
+
+For detailed roadmap of future versions (v0.3.0 through v1.0.0), please see ROADMAP.md.
