@@ -9,6 +9,10 @@
 - `pnpm check:fix` - Run Biome checks with fixes
 - `pnpm check:unsafe` - Run Biome checks with unsafe fixes
 
+## Requirements & Technical Design
+- **Requirements**: Reference PRD.md
+- **Technical design**: Reference TDD.md
+
 ## Testing Approach
 - `pnpm test` - Run all tests
 - `pnpm vitest run <test-file>` - Run a specific test file

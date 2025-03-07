@@ -21,8 +21,11 @@ graph TD
     AgentManager --> DocumentationAgent[Documentation Agent]
     AgentManager --> ReviewAgent[Review Agent]
     AIPipeline --> MarkdownGen[Markdown Generator]
+    MarkdownGen --> TemplateManager[Template Manager]
     Config --> AIPipeline
     MarkdownGen --> DocsifySetup[Docsify Setup]
+    TemplateManager --> DocQualityAnalyzer[Documentation Quality Analyzer]
+    DocQualityAnalyzer --> MarkdownGen
 ```
 
 ### Technology Stack
@@ -48,9 +51,13 @@ graph TD
         Remark --> Frontmatter[remark-frontmatter]
         Remark --> GFM[remark-gfm]
         Remark --> MermaidSupport[remark-mermaid]
+        Handlebars[Handlebars] --> TemplateSystem[Template System]
     end
 
     subgraph "AI Orchestration"
+        AICore[AI SDK Core] --> AnthrSdk[@ai-sdk/anthropic]
+        AICore --> OpenAISdk[@ai-sdk/openai]
+        AICore --> GoogleSdk[@ai-sdk/google]
         LangChain[LangChain.js] --> AgentWorkflows[Agent Workflows]
         LangChain --> RAG[RAG Capabilities]
         Ollama[Ollama SDK] --> LocalModels[Local Model Support]
@@ -68,6 +75,13 @@ graph TD
         PicoColors[picocolors] --> TerminalColoring[Terminal Coloring]
         Ora[ora] --> Spinners[Loading Spinners]
         Boxen[boxen] --> InfoBoxes[Information Boxes]
+    end
+
+    subgraph "Performance Optimization"
+        Lodash[lodash] --> BatchProcessing[Batch Processing]
+        Lodash --> ThrottleRequests[Request Throttling]
+        NodeCache[node-cache] --> ResponseCaching[Response Caching]
+        PQueue[p-queue] --> ConcurrencyControl[Concurrency Control]
     end
 
     subgraph "GitHub Integration"
@@ -100,6 +114,23 @@ program
   .description('Generate documentation from TypeScript code')
   .option('-o, --output <dir>', 'output directory', './docs')
   .option('-d, --detail <level>', 'detail level (low|medium|high)', 'medium')
+  .option('-p, --provider <provider>', 'AI provider (anthropic|openai|google)', 'anthropic')
+  .action(async (options) => {
+    // Implementation
+  });
+
+program
+  .command('setup-docsify')
+  .description('Set up Docsify for documentation viewing')
+  .option('-t, --theme <theme>', 'docsify theme', 'vue')
+  .action(async (options) => {
+    // Implementation
+  });
+
+program
+  .command('verify')
+  .description('Verify documentation quality')
+  .option('-t, --threshold <number>', 'quality threshold (0-100)', '80')
   .action(async (options) => {
     // Implementation
   });
@@ -112,12 +143,19 @@ program
 #### Implementation Details
 - **cosmiconfig**: Configuration loading from multiple sources
 - **zod**: Schema validation for configuration data
+- **dotenv**: Environment variable management for API keys
 - Supports file, environment variable, and CLI argument sources
 
 #### Configuration Schema
 ```typescript
 import { z } from 'zod';
+import { cosmiconfig } from 'cosmiconfig';
+import dotenv from 'dotenv';
 
+// Load environment variables
+dotenv.config();
+
+// Define configuration schema with Zod
 const ConfigSchema = z.object({
   project: z.object({
     name: z.string(),
@@ -126,16 +164,84 @@ const ConfigSchema = z.object({
   }),
   source: z.object({
     include: z.array(z.string()),
-    exclude: z.array(z.string()).optional(),
+    exclude: z.array(z.string()).optional().default([]),
   }),
   markdown: z.object({
     headingLevel: z.number().min(1).max(6).default(2),
     linkStyle: z.enum(['inline', 'reference']).default('inline'),
+    codeBlocks: z.object({
+      typescript: z.boolean().default(true),
+      lineNumbers: z.boolean().default(true),
+    }).optional().default({}),
   }),
-  // Additional configuration properties
+  ai: z.object({
+    provider: z.enum(['anthropic', 'openai', 'google']).default('anthropic'),
+    model: z.string().optional(),
+    temperature: z.number().min(0).max(1).default(0.2),
+    fallbackProvider: z.enum(['anthropic', 'openai', 'google']).optional(),
+    maxTokens: z.number().optional().default(4000),
+    thinkingBudget: z.number().optional(),
+  }),
+  agents: z.object({
+    mode: z.enum(['minimal', 'balanced', 'extensive']).default('balanced'),
+    planning: z.boolean().default(true),
+    documentation: z.boolean().default(true),
+    review: z.boolean().default(true),
+  }),
+  context: z.object({
+    dependencyDepth: z.number().min(0).max(5).default(3),
+    relevanceThreshold: z.number().min(0).max(1).default(0.7),
+    tokenBudget: z.object({
+      targetComponent: z.number().default(0.4),
+      directDependencies: z.number().default(0.3),
+      usageExamples: z.number().default(0.2),
+      styleGuide: z.number().default(0.1),
+    }).optional().default({}),
+  }).optional().default({}),
+  templates: z.record(z.string()).optional(),
+  security: z.object({
+    dataTransmissionLevel: z.enum(['full', 'partial', 'minimal', 'local_only']).default('partial'),
+    sensitivePatterns: z.array(z.string()).optional().default([]),
+  }).optional().default({}),
+  cost: z.object({
+    perRunLimit: z.number().optional(),
+    monthlyLimit: z.number().optional(),
+  }).optional().default({}),
 });
 
 type ConfigType = z.infer<typeof ConfigSchema>;
+
+export class ConfigurationManager {
+  private explorer = cosmiconfig('hermes');
+  private config: ConfigType | null = null;
+
+  async loadConfig(configPath?: string): Promise<Result<ConfigType, Error>> {
+    try {
+      // Search for configuration or load from specific path
+      const result = configPath
+        ? await this.explorer.load(configPath)
+        : await this.explorer.search();
+
+      if (result === null) {
+        return this.getDefaultConfig();
+      }
+
+      // Validate configuration
+      const validationResult = ConfigSchema.safeParse(result.config);
+
+      if (validationResult.success) {
+        this.config = validationResult.data;
+        return ok(this.config);
+      } else {
+        return err(new Error(`Invalid configuration: ${validationResult.error.message}`));
+      }
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  // Additional methods for configuration management
+}
 ```
 
 ### 3. TypeScript Code Parser
@@ -149,6 +255,7 @@ type ConfigType = z.infer<typeof ConfigSchema>;
 ```typescript
 import { Project, SourceFile, ClassDeclaration } from 'ts-morph';
 import { Result, ok, err } from 'neverthrow';
+import { parse as parseComment } from 'comment-parser';
 
 class TypeScriptParser {
   private project: Project;
@@ -183,7 +290,63 @@ class TypeScriptParser {
   }
 
   private extractFileMetadata(sourceFile: SourceFile): ParsedFile {
-    // Implementation details for extracting classes, interfaces, types, etc.
+    // Extract classes, interfaces, functions, etc.
+    const classes = this.extractClasses(sourceFile);
+    const interfaces = this.extractInterfaces(sourceFile);
+    const types = this.extractTypes(sourceFile);
+    const functions = this.extractFunctions(sourceFile);
+
+    return {
+      filePath: sourceFile.getFilePath(),
+      classes,
+      interfaces,
+      types,
+      functions,
+      exports: this.extractExports(sourceFile),
+      imports: this.extractImports(sourceFile),
+    };
+  }
+
+  private extractClasses(sourceFile: SourceFile): ParsedClass[] {
+    return sourceFile.getClasses().map(classDecl => {
+      const name = classDecl.getName() || 'AnonymousClass';
+      const jsDocs = this.extractJSDoc(classDecl);
+
+      return {
+        name,
+        description: jsDocs.description || '',
+        properties: this.extractProperties(classDecl),
+        methods: this.extractMethods(classDecl),
+        decorators: this.extractDecorators(classDecl),
+        isExported: classDecl.isExported(),
+        heritage: this.extractHeritage(classDecl),
+        location: this.getNodeLocation(classDecl),
+        jsDocs,
+      };
+    });
+  }
+
+  // Additional methods for extracting interfaces, types, functions, etc.
+
+  private extractJSDoc(node: Node): JSDocInfo {
+    const jsDocNodes = node.getJsDocs();
+    if (jsDocNodes.length === 0) {
+      return { description: '', tags: [] };
+    }
+
+    const jsDoc = jsDocNodes[0];
+    const commentText = jsDoc.getComment() || '';
+
+    // Use comment-parser to parse JSDoc content
+    const parsedDocs = parseComment(`/*${jsDoc.getText()}*/`);
+    const description = parsedDocs[0]?.description || '';
+    const tags = parsedDocs[0]?.tags.map(tag => ({
+      tag: tag.tag,
+      name: tag.name,
+      description: tag.description,
+    })) || [];
+
+    return { description, tags };
   }
 }
 ```
@@ -191,23 +354,92 @@ class TypeScriptParser {
 ### 4. AI Pipeline Orchestrator
 
 #### Implementation Details
-- **Vercel AI SDK**: Core AI provider integration
+- **AI SDK Core**: Foundation for AI provider integration
+- **@ai-sdk/anthropic**: Claude model integration with thinking mode
+- **@ai-sdk/openai**: GPT model integration
+- **@ai-sdk/google**: Gemini model integration
 - **LangChain.js**: Structured prompting and agent workflows
-- Two processing modes: direct generation and agent-based generation
+- Multiple AI providers with fallback mechanism
 
 #### Pipeline Implementation
 ```typescript
-import { VercelAI } from '@vercel/ai';
-import { AgentManager } from './agent-manager';
-import { Result, ok, err } from 'neverthrow';
+import { Result, ok, err, ResultAsync } from 'neverthrow';
+import { streamText, generateText } from '@ai-sdk/core';
+import { anthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
+
+class AIProviderManager {
+  private provider: string;
+  private apiKey: string;
+
+  constructor(provider: string, apiKey: string) {
+    this.provider = provider;
+    this.apiKey = apiKey;
+  }
+
+  async generateDocumentation(
+    code: string,
+    context: string,
+    options: GenerationOptions
+  ): Promise<Result<string, Error>> {
+    try {
+      const messages = [
+        { role: 'system', content: 'Generate clear, comprehensive documentation for the provided TypeScript code.' },
+        { role: 'user', content: `Code:\n${code}\n\nContext:\n${context}` }
+      ];
+
+      switch (this.provider.toLowerCase()) {
+        case 'anthropic':
+          return await this.useAnthropic(messages, options);
+        case 'openai':
+          return await this.useOpenAI(messages, options);
+        case 'google':
+          return await this.useGoogle(messages, options);
+        default:
+          return err(new Error(`Unsupported AI provider: ${this.provider}`));
+      }
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  private async useAnthropic(messages: any[], options: GenerationOptions): Promise<Result<string, Error>> {
+    try {
+      const { text } = await streamText({
+        model: anthropic('claude-3-7-sonnet-20250219'),
+        messages,
+        providerOptions: {
+          anthropic: {
+            thinking: {
+              type: 'enabled',
+              budgetTokens: options.thinkingBudget || 12000
+            },
+          },
+        },
+      });
+
+      return ok(text);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  // Additional methods for other providers
+}
 
 class AIPipelineOrchestrator {
-  private ai: VercelAI;
+  private aiProviderManager: AIProviderManager;
   private agentManager: AgentManager;
+  private config: PipelineConfig;
 
-  constructor(apiKey: string, config: PipelineConfig) {
-    this.ai = new VercelAI({ apiKey });
-    this.agentManager = new AgentManager(this.ai, config);
+  constructor(config: PipelineConfig) {
+    this.config = config;
+    this.aiProviderManager = new AIProviderManager(
+      config.aiProvider,
+      this.getApiKey(config.aiProvider)
+    );
+    this.agentManager = new AgentManager(this.aiProviderManager, config);
   }
 
   public async generateDocumentation(
@@ -228,21 +460,79 @@ class AIPipelineOrchestrator {
 
   private shouldUseAgents(parsedFile: ParsedFile, options: GenerationOptions): boolean {
     // Decision logic based on file complexity and configuration
+    const complexityScore = this.calculateComplexity(parsedFile);
+    const configMode = this.config.agents.mode;
+
+    if (configMode === 'extensive') return true;
+    if (configMode === 'minimal') return false;
+
+    // For 'balanced' mode, make decision based on complexity
+    return complexityScore > 50; // Threshold for using agents
   }
 
   private async generateDirect(
     parsedFile: ParsedFile,
     options: GenerationOptions
   ): Promise<Result<GeneratedDoc, Error>> {
-    // Direct generation implementation
+    // Extract code and context
+    const { code, context } = this.prepareCodeAndContext(parsedFile);
+
+    // Generate documentation using AI provider
+    const result = await this.aiProviderManager.generateDocumentation(
+      code,
+      context,
+      options
+    );
+
+    if (result.isErr()) {
+      // Try fallback provider if configured
+      if (this.config.ai.fallbackProvider) {
+        const fallbackManager = new AIProviderManager(
+          this.config.ai.fallbackProvider,
+          this.getApiKey(this.config.ai.fallbackProvider)
+        );
+
+        return fallbackManager.generateDocumentation(code, context, options)
+          .andThen(docText => this.parseGeneratedDocumentation(docText, parsedFile));
+      }
+
+      return err(result.error);
+    }
+
+    return this.parseGeneratedDocumentation(result.value, parsedFile);
   }
 
   private async generateWithAgents(
     parsedFile: ParsedFile,
     options: GenerationOptions
   ): Promise<Result<GeneratedDoc, Error>> {
-    // Agent-based generation implementation
+    // Planning phase
+    const planResult = await this.agentManager.executePlanningAgent(parsedFile);
+
+    if (planResult.isErr()) {
+      return err(planResult.error);
+    }
+
+    const plan = planResult.value;
+
+    // Documentation generation phase
+    const docResult = await this.agentManager.executeDocumentationAgent(parsedFile, plan);
+
+    if (docResult.isErr()) {
+      return err(docResult.error);
+    }
+
+    // Review phase
+    const reviewResult = await this.agentManager.executeReviewAgent(docResult.value);
+
+    if (reviewResult.isErr()) {
+      return err(reviewResult.error);
+    }
+
+    return ok(reviewResult.value);
   }
+
+  // Helper methods for context preparation, API key management, etc.
 }
 ```
 
@@ -259,41 +549,487 @@ import { LangChain, Agent, Tool } from 'langchain';
 import { Result, ok, err } from 'neverthrow';
 
 class AgentManager {
-  private langchain: LangChain;
+  private aiProvider: AIProviderManager;
   private agents: Map<string, Agent>;
+  private config: AgentConfig;
+  private loopGuard: AgentLoopGuard;
 
-  constructor(ai: VercelAI, config: AgentConfig) {
-    this.langchain = new LangChain({ llm: ai.getLLM() });
+  constructor(aiProvider: AIProviderManager, config: AgentConfig) {
+    this.aiProvider = aiProvider;
+    this.config = config;
     this.agents = new Map();
-    this.initializeAgents(config);
+    this.loopGuard = new AgentLoopGuard(5); // Max 5 iterations
+    this.initializeAgents();
   }
 
-  private initializeAgents(config: AgentConfig): void {
+  private initializeAgents(): void {
     // Initialize planning, documentation, and review agents
-    this.agents.set('planning', this.createPlanningAgent(config));
-    this.agents.set('documentation', this.createDocumentationAgent(config));
-    this.agents.set('review', this.createReviewAgent(config));
+    this.agents.set('planning', this.createPlanningAgent());
+    this.agents.set('documentation', this.createDocumentationAgent());
+    this.agents.set('review', this.createReviewAgent());
   }
 
-  private createPlanningAgent(config: AgentConfig): Agent {
-    // Create planning agent implementation
+  private createPlanningAgent(): Agent {
+    // Create planning agent with tools and prompt templates
+    const tools = [
+      new Tool({
+        name: 'analyze-type-structure',
+        description: 'Analyze TypeScript type structure',
+        func: async (input: string) => {
+          // Implementation
+        }
+      }),
+      new Tool({
+        name: 'search-related-code',
+        description: 'Search for related code in the codebase',
+        func: async (input: string) => {
+          // Implementation
+        }
+      }),
+      new Tool({
+        name: 'extract-examples',
+        description: 'Extract usage examples from codebase',
+        func: async (input: string) => {
+          // Implementation
+        }
+      })
+    ];
+
+    return new Agent({
+      tools,
+      llm: this.aiProvider,
+      prompt: PLANNING_AGENT_PROMPT
+    });
   }
 
-  private createDocumentationAgent(config: AgentConfig): Agent {
-    // Create documentation agent implementation
-  }
-
-  private createReviewAgent(config: AgentConfig): Agent {
-    // Create review agent implementation
-  }
+  // Methods for other agent types
 
   public async executePlanningAgent(
     parsedCode: ParsedFile
   ): Promise<Result<DocumentationPlan, Error>> {
-    // Execute planning agent implementation
+    // Reset iteration counter
+    this.loopGuard.resetIterations('planning');
+
+    try {
+      const agent = this.agents.get('planning');
+      if (!agent) {
+        return err(new Error('Planning agent not initialized'));
+      }
+
+      // Check iteration limit
+      const loopCheck = this.loopGuard.checkAndIncrementIteration('planning');
+      if (loopCheck.isErr()) {
+        return err(loopCheck.error);
+      }
+
+      // Execute agent
+      const result = await agent.execute({
+        input: JSON.stringify(parsedCode),
+        maxIterations: 5
+      });
+
+      // Parse and validate the plan
+      try {
+        const plan = JSON.parse(result.output);
+        return ok(plan);
+      } catch (error) {
+        return err(new Error(`Failed to parse planning agent output: ${error}`));
+      }
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
   }
 
   // Additional methods for other agents
+}
+
+class AgentLoopGuard {
+  private maxIterations: number;
+  private iterationCount: Map<string, number>;
+
+  constructor(maxIterations: number = 5) {
+    this.maxIterations = maxIterations;
+    this.iterationCount = new Map();
+  }
+
+  public checkAndIncrementIteration(agentId: string): Result<void, Error> {
+    const currentCount = this.iterationCount.get(agentId) || 0;
+
+    if (currentCount >= this.maxIterations) {
+      return err(new Error(`Agent loop detected: ${agentId} exceeded max iterations`));
+    }
+
+    this.iterationCount.set(agentId, currentCount + 1);
+    return ok(undefined);
+  }
+
+  public resetIterations(agentId: string): void {
+    this.iterationCount.set(agentId, 0);
+  }
+}
+```
+
+### 6. Template Manager
+
+#### Implementation Details
+- **Handlebars**: Templating engine for documentation generation
+- Customizable templates for different documentation components
+- Support for user-defined templates and custom formatters
+
+#### Implementation
+```typescript
+import { Result, ok, err } from 'neverthrow';
+import Handlebars from 'handlebars';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Default templates
+const DEFAULT_TEMPLATES = {
+  class: `
+# {{className}}
+
+{{classDescription}}
+
+## Properties
+
+{{#each properties}}
+### {{name}}
+
+- **Type**: \`{{type}}\`
+- **Description**: {{description}}
+{{/each}}
+
+## Methods
+
+{{#each methods}}
+### {{name}}
+
+{{description}}
+
+{{#if parameters.length}}
+**Parameters**:
+{{#each parameters}}
+- \`{{name}}\`: \`{{type}}\` - {{description}}
+{{/each}}
+{{/if}}
+
+**Returns**: \`{{returnType}}\` - {{returnDescription}}
+{{/each}}
+`,
+  // Additional templates for other code elements
+};
+
+export class TemplateManager {
+  private templates: Record<string, HandlebarsTemplateDelegate> = {};
+  private customTemplateDir?: string;
+
+  constructor(customTemplateDir?: string, customTemplates?: Record<string, string>) {
+    this.customTemplateDir = customTemplateDir;
+    this.registerDefaultTemplates();
+
+    if (customTemplates) {
+      this.registerCustomTemplatesFromObject(customTemplates);
+    }
+  }
+
+  async initialize(): Promise<Result<void, Error>> {
+    try {
+      if (this.customTemplateDir) {
+        const result = await this.loadCustomTemplatesFromDirectory(this.customTemplateDir);
+        if (result.isErr()) {
+          return result;
+        }
+      }
+
+      this.registerHelpers();
+      return ok(undefined);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  private registerDefaultTemplates(): void {
+    for (const [name, templateString] of Object.entries(DEFAULT_TEMPLATES)) {
+      this.templates[name] = Handlebars.compile(templateString);
+    }
+  }
+
+  // Methods for template registration, loading, and rendering
+
+  private registerHelpers(): void {
+    Handlebars.registerHelper('formatType', function(type: string) {
+      // Format complex TypeScript types for better readability
+      return type.replace(/\|/g, ' | ').replace(/&/g, ' & ');
+    });
+
+    Handlebars.registerHelper('codeBlock', function(content: string, language: string) {
+      return `\`\`\`${language}\n${content}\n\`\`\``;
+    });
+
+    // Additional helpers
+  }
+
+  renderTemplate(type: string, data: any): Result<string, Error> {
+    const templateResult = this.getTemplate(type);
+
+    if (templateResult.isErr()) {
+      return err(templateResult.error);
+    }
+
+    try {
+      const template = templateResult.value;
+      const rendered = template(data);
+      return ok(rendered);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(`Template rendering failed: ${error}`));
+    }
+  }
+}
+```
+
+### 7. Batch Processing System
+
+#### Implementation Details
+- **lodash**: Utilities for chunking and throttling
+- **p-queue**: Concurrency control for API requests
+- **node-cache**: Caching for API responses
+- Implements incremental processing for large codebases
+
+#### Implementation
+```typescript
+import { Result, ok, err, ResultAsync } from 'neverthrow';
+import { throttle, chunk } from 'lodash';
+import path from 'path';
+import fs from 'fs/promises';
+import PQueue from 'p-queue';
+import NodeCache from 'node-cache';
+
+interface ProcessingStats {
+  totalFiles: number;
+  processedFiles: number;
+  skippedFiles: number;
+  errorFiles: number;
+  startTime: Date;
+  endTime?: Date;
+  elapsedMs?: number;
+}
+
+export class BatchProcessor {
+  private codeParser: CodeParser;
+  private aiPipeline: AIPipelineOrchestrator;
+  private markdownGenerator: MarkdownGenerator;
+  private batchSize: number;
+  private concurrency: number;
+  private delayBetweenBatches: number;
+  private outputDir: string;
+  private stats: ProcessingStats;
+  private cache: NodeCache;
+  private queue: PQueue;
+  private onProgressCallback?: (stats: ProcessingStats) => void;
+
+  constructor(
+    codeParser: CodeParser,
+    aiPipeline: AIPipelineOrchestrator,
+    markdownGenerator: MarkdownGenerator,
+    options: {
+      batchSize?: number;
+      concurrency?: number;
+      delayBetweenBatches?: number;
+      outputDir: string;
+      onProgress?: (stats: ProcessingStats) => void;
+    }
+  ) {
+    this.codeParser = codeParser;
+    this.aiPipeline = aiPipeline;
+    this.markdownGenerator = markdownGenerator;
+    this.batchSize = options.batchSize || 5;
+    this.concurrency = options.concurrency || 2;
+    this.delayBetweenBatches = options.delayBetweenBatches || 1000;
+    this.outputDir = options.outputDir;
+    this.onProgressCallback = options.onProgress;
+
+    this.stats = {
+      totalFiles: 0,
+      processedFiles: 0,
+      skippedFiles: 0,
+      errorFiles: 0,
+      startTime: new Date(),
+    };
+
+    this.cache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+    this.queue = new PQueue({ concurrency: this.concurrency });
+  }
+
+  async processFiles(files: string[]): Promise<Result<ProcessingStats, Error>> {
+    try {
+      this.stats.totalFiles = files.length;
+      this.stats.startTime = new Date();
+
+      // Create output directory if it doesn't exist
+      await fs.mkdir(this.outputDir, { recursive: true });
+
+      // Split files into batches
+      const batches = chunk(files, this.batchSize);
+
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        console.log(`Processing batch ${i + 1} of ${batches.length} (${batch.length} files)`);
+
+        // Process batch with controlled concurrency
+        const results = await this.processBatch(batch);
+
+        // Update statistics
+        results.forEach(result => {
+          if (result.isOk()) {
+            this.stats.processedFiles++;
+          } else if (result.error.message.includes('Skipped')) {
+            this.stats.skippedFiles++;
+          } else {
+            this.stats.errorFiles++;
+          }
+        });
+
+        // Call progress callback if provided
+        if (this.onProgressCallback) {
+          this.onProgressCallback({ ...this.stats });
+        }
+
+        // Add delay between batches to avoid rate limiting
+        if (i < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, this.delayBetweenBatches));
+        }
+      }
+
+      // Update final statistics
+      this.stats.endTime = new Date();
+      this.stats.elapsedMs = this.stats.endTime.getTime() - this.stats.startTime.getTime();
+
+      return ok(this.stats);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  // Additional implementation details
+}
+```
+
+### 8. Documentation Quality Analyzer
+
+#### Implementation Details
+- Analyzes documentation for clarity, completeness, and consistency
+- Implements best practices from documentation guidelines
+- Provides recommendations for improvement
+
+#### Implementation
+```typescript
+class DocumentationQualityAnalyzer {
+  private qualityThreshold: number;
+  private aiPipeline: AIPipelineOrchestrator;
+
+  constructor(aiPipeline: AIPipelineOrchestrator, qualityThreshold: number = 80) {
+    this.aiPipeline = aiPipeline;
+    this.qualityThreshold = qualityThreshold;
+  }
+
+  async analyzeDocumentation(documentation: string): Promise<Result<QualityReport, Error>> {
+    try {
+      const clarityScore = this.analyzeClarityMetrics(documentation);
+      const completenessScore = this.analyzeCompletenessMetrics(documentation);
+      const consistencyScore = this.analyzeConsistencyMetrics(documentation);
+      const examplesScore = this.analyzeExamplesMetrics(documentation);
+      const organizationScore = this.analyzeOrganizationMetrics(documentation);
+
+      const totalScore = (
+        clarityScore.score * 0.3 +
+        completenessScore.score * 0.3 +
+        consistencyScore.score * 0.15 +
+        examplesScore.score * 0.15 +
+        organizationScore.score * 0.1
+      );
+
+      const improvements: Improvement[] = [];
+
+      // Collect improvement suggestions from each metric
+      if (clarityScore.score < this.qualityThreshold) {
+        improvements.push(...clarityScore.improvements);
+      }
+
+      if (completenessScore.score < this.qualityThreshold) {
+        improvements.push(...completenessScore.improvements);
+      }
+
+      if (consistencyScore.score < this.qualityThreshold) {
+        improvements.push(...consistencyScore.improvements);
+      }
+
+      if (examplesScore.score < this.qualityThreshold) {
+        improvements.push(...examplesScore.improvements);
+      }
+
+      if (organizationScore.score < this.qualityThreshold) {
+        improvements.push(...organizationScore.improvements);
+      }
+
+      const report: QualityReport = {
+        overallScore: totalScore,
+        metrics: {
+          clarity: clarityScore,
+          completeness: completenessScore,
+          consistency: consistencyScore,
+          examples: examplesScore,
+          organization: organizationScore,
+        },
+        passesThreshold: totalScore >= this.qualityThreshold,
+        improvements,
+      };
+
+      return ok(report);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  async improveDocumentation(documentation: string, qualityReport: QualityReport): Promise<Result<string, Error>> {
+    if (qualityReport.passesThreshold) {
+      return ok(documentation);
+    }
+
+    try {
+      // Generate improvement prompts based on quality report
+      const improvementPrompts = this.generateImprovementPrompts(qualityReport);
+
+      // Use AI to improve documentation
+      let improvedDoc = documentation;
+
+      for (const prompt of improvementPrompts) {
+        const result = await this.aiPipeline.generateImprovement(improvedDoc, prompt);
+
+        if (result.isOk()) {
+          improvedDoc = result.value;
+        }
+      }
+
+      return ok(improvedDoc);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  // Implementation of analysis metrics
+  private analyzeClarityMetrics(documentation: string): MetricResult {
+    // Implement clarity analysis based on documentation guidelines
+    // Check for jargon, sentence complexity, readability scores
+
+    // Placeholder implementation
+    return {
+      score: 0,
+      details: {},
+      improvements: [],
+    };
+  }
+
+  // Additional metric implementations
 }
 ```
 
@@ -620,6 +1356,7 @@ class ApiKeyManager {
     const schema = z.object({
       OPENAI_API_KEY: z.string().optional(),
       ANTHROPIC_API_KEY: z.string().optional(),
+      GOOGLE_API_KEY: z.string().optional(),
       // Additional API keys
     });
 
@@ -629,6 +1366,7 @@ class ApiKeyManager {
       const { data } = result;
       if (data.OPENAI_API_KEY) this.apiKeys.set('openai', data.OPENAI_API_KEY);
       if (data.ANTHROPIC_API_KEY) this.apiKeys.set('anthropic', data.ANTHROPIC_API_KEY);
+      if (data.GOOGLE_API_KEY) this.apiKeys.set('google', data.GOOGLE_API_KEY);
       // Additional API keys
     }
   }
@@ -687,35 +1425,6 @@ class DataTransmissionController {
 ```
 
 ## Risk Mitigation Implementations
-
-### Agent Loop Prevention
-
-```typescript
-class AgentLoopGuard {
-  private maxIterations: number;
-  private iterationCount: Map<string, number>;
-
-  constructor(maxIterations: number = 5) {
-    this.maxIterations = maxIterations;
-    this.iterationCount = new Map();
-  }
-
-  public checkAndIncrementIteration(agentId: string): Result<void, Error> {
-    const currentCount = this.iterationCount.get(agentId) || 0;
-
-    if (currentCount >= this.maxIterations) {
-      return err(new Error(`Agent loop detected: ${agentId} exceeded max iterations`));
-    }
-
-    this.iterationCount.set(agentId, currentCount + 1);
-    return ok(undefined);
-  }
-
-  public resetIterations(agentId: string): void {
-    this.iterationCount.set(agentId, 0);
-  }
-}
-```
 
 ### Cost Control System
 
@@ -800,10 +1509,12 @@ module.exports = {
     logo: 'logo.png',
   },
   ai: {
-    model: 'gpt-4',
+    provider: 'anthropic',
+    model: 'claude-3-7-sonnet-20250219',
     temperature: 0.2,
-    provider: 'openai',
-    fallbackProvider: 'anthropic',
+    fallbackProvider: 'openai',
+    maxTokens: 4000,
+    thinkingBudget: 12000,
   },
   agents: {
     mode: 'balanced',
@@ -820,6 +1531,24 @@ module.exports = {
       usageExamples: 0.2,
       styleGuide: 0.1,
     },
+  },
+  templates: {
+    // Custom templates (optional)
+    class: "...",
+    interface: "...",
+  },
+  security: {
+    dataTransmissionLevel: 'partial',
+    sensitivePatterns: [
+      'process\\.env\\.[A-Z_]+',
+      'API_KEY',
+      'SECRET',
+      'PASSWORD',
+    ],
+  },
+  cost: {
+    perRunLimit: 5.0,
+    monthlyLimit: 100.0,
   },
   diataxis: {
     tutorials: 'docs/tutorials',
@@ -866,7 +1595,9 @@ jobs:
       - name: Generate documentation
         run: npx hermes generate
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
       - name: Setup Docsify
         run: npx hermes setup-docsify
@@ -884,27 +1615,33 @@ jobs:
 ### Phase 1: Core Framework (2 Months)
 - CLI interface with Commander.js
 - Basic TypeScript parsing with ts-morph
-- Initial AI integration with Vercel AI SDK
+- Initial AI integration with AI SDK
 - Simple Markdown generation
+- Configuration management with cosmiconfig and zod
 
 ### Phase 2: Agent System Development (3 Months)
 - LangChain.js integration
 - Agent manager implementation
 - Smart context determination system
+- Template system with Handlebars
 - Docsify integration
 
 ### Phase 3: Optimization & Testing (2 Months)
+- Batch processing for large codebases
 - Token optimization
 - Performance enhancements
+- Documentation quality analyzer
 - Testing framework
 - CI/CD integration
 
 ### Phase 4: Release & Refinement (Ongoing)
+- Multiple AI provider support
 - User feedback collection
 - Agent behavior refinement
 - Context system tuning
 - Advanced feature implementation
+- Cost control and security enhancements
 
 ## Conclusion
 
-This technical design document outlines the detailed implementation strategy for Hermes, an AI-powered documentation generator for TypeScript projects. The architecture leverages modern tools and technologies, with a focus on code quality, security, and performance optimization. The modular design allows for flexible deployment options, scalability, and adaptability to changing AI capabilities and user requirements.
+This technical design document outlines the detailed implementation strategy for Hermes, an AI-powered documentation generator for TypeScript projects. The architecture leverages modern tools and technologies, with a focus on code quality, security, and performance optimization. The modular design allows for flexible deployment options, scalability, and adaptability to changing AI capabilities and user requirements. The enhanced implementation includes support for multiple AI providers, template customization, batch processing for large codebases, and documentation quality analysis to ensure high-quality output that follows best practices.
