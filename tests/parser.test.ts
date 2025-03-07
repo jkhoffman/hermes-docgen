@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
 import { TypeScriptParser } from "../src/parser";
-import path from "path";
 
 describe("TypeScriptParser", () => {
   it("should create a parser instance", () => {

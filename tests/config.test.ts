@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import { loadConfig, defaultConfig } from "../src/config";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { defaultConfig, loadConfig } from "../src/config";
 
 describe("Configuration Loading", () => {
 	let tempDir: string;
@@ -51,7 +52,7 @@ describe("Configuration Loading", () => {
 			expect(config.outDir).toBe("./custom-docs");
 			expect(config.title).toBe("Test Documentation");
 			expect(config.ai.enabled).toBe(false);
-			
+
 			// Default values should still be present for unspecified fields
 			expect(config.include).toEqual(defaultConfig.include);
 			expect(config.exclude).toEqual(defaultConfig.exclude);

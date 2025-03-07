@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { HermesConfig } from "../src/config";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import type { HermesConfig } from "../src/config";
 import { DocumentationGenerator } from "../src/generator";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
 
 describe("Integration Tests", () => {
 	let tempDir: string;
@@ -20,13 +21,13 @@ describe("Integration Tests", () => {
 		// Create a temporary directory
 		tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "hermes-test-"));
 		outputDir = path.join(tempDir, "docs");
-		
+
 		// Make sure the output directory exists
 		await fs.mkdir(outputDir, { recursive: true });
-		
+
 		// Create a simple TypeScript file for testing
 		tempFilePath = path.join(tempDir, "sample.ts");
-		
+
 		const sampleFileContent = `
 /**
  * A simple calculator class
@@ -56,7 +57,7 @@ export class Calculator {
 	}
 }
 		`;
-		
+
 		await fs.writeFile(tempFilePath, sampleFileContent, "utf8");
 	});
 
@@ -92,46 +93,46 @@ export class Calculator {
 				generateExamples: false,
 			},
 		};
-		
+
 		// Create the documentation generator
 		const generator = new DocumentationGenerator(config);
-		
+
 		// Generate documentation
 		const result = await generator.generate([tempFilePath]);
-		
+
 		// Check that the generation succeeded
 		expect(result.isOk()).toBe(true);
-		
+
 		if (result.isOk()) {
 			const filePaths = result.value;
-			
+
 			// Should have generated at least one file
 			expect(filePaths.length).toBeGreaterThan(0);
-			
+
 			// Check for both the index file and content file
 			const outputFiles = await fs.readdir(outputDir);
 			expect(outputFiles).toContain("index.md");
 			expect(outputFiles).toContain("sample.md");
-			
+
 			// Read and verify the content of the generated file
 			const sampleContent = await fs.readFile(
 				path.join(outputDir, "sample.md"),
-				"utf8"
+				"utf8",
 			);
-			
+
 			// Content should include the class name
 			expect(sampleContent).toContain("# Calculator");
-			
+
 			// Content should include class description
 			expect(sampleContent).toContain("A simple calculator class");
-			
+
 			// Content should include method descriptions
 			expect(sampleContent).toContain("Adds two numbers");
 			expect(sampleContent).toContain("Subtracts one number from another");
-			
+
 			// Content should include parameters section
 			expect(sampleContent).toContain("Parameters");
-			
+
 			// Content should include return types
 			expect(sampleContent).toContain("): number");
 		}
