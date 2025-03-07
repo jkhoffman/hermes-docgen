@@ -1,5 +1,6 @@
 import path from "node:path";
 import { type Result, err, ok } from "neverthrow";
+import type { SourceFile } from "ts-morph";
 
 import type { HermesConfig } from "../config";
 import {

@@ -1,3 +1,3 @@
 {
-  "*.ts": "biome check"
+  "*.{js,ts,json}": "biome check"
 }
