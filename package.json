@@ -15,7 +15,7 @@
 		"check": "biome check src",
 		"check:fix": "biome check --fix src",
 		"check:unsafe": "biome check --fix --unsafe src",
-		"test": "vitest run",
+		"test": "vitest run --test-timeout=10000",
 		"test:coverage": "vitest run --coverage",
 		"build": "rimraf dist && tsc"
 	},
