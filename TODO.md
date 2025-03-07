@@ -7,8 +7,8 @@ This document outlines the essential tasks for delivering the first version (v0.
 - [x] Initialize TypeScript project with proper tsconfig.json
 - [x] Configure Biome for formatting and linting
 - [x] Set up Jest/Vitest for testing framework
-- [ ] Create GitHub repository with proper structure
-- [ ] Configure CI/CD pipeline for basic testing
+- [x] Create GitHub repository with proper structure
+- [x] Configure CI/CD pipeline for basic testing
 - [x] Set up package.json with proper dependencies
 - [x] Create developer documentation for setup
 
@@ -77,7 +77,12 @@ This document outlines the essential tasks for delivering the first version (v0.
 - [x] Run full test suite
 - [x] Test with sample TypeScript projects
 - [ ] Create v0.1.0 tag and release
+  - After pushing to GitHub, create a new release with tag v0.1.0
+  - Include release notes summarizing the features in v0.1.0
 - [ ] Publish package to npm
+  - Create an NPM token (if not already done)
+  - Add the NPM token as a secret named NPM_TOKEN in the GitHub repository
+  - The GitHub workflow will handle publishing when a release is created
 
 ## Future Improvements (v0.2.0+)
 

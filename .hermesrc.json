@@ -1,0 +1,23 @@
+{
+  "outDir": "./docs",
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "title": "API Documentation",
+  "markdownOptions": {
+    "tocDepth": 3,
+    "linkReferences": true,
+    "includeTypes": true,
+    "includeExamples": true
+  },
+  "ai": {
+    "enabled": true,
+    "provider": "openai",
+    "enhanceComments": true,
+    "generateExamples": false
+  }
+}

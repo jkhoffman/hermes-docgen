@@ -1,0 +1,26 @@
+# Source code
+src/
+
+# Tests
+tests/
+*.test.ts
+*.spec.ts
+
+# Configuration files
+.github/
+.vscode/
+biome.json
+tsconfig.json
+CLAUDE.md
+PRD.md
+ROADMAP.md
+TDD.md
+TODO.md
+
+# Development files
+node_modules/
+.DS_Store
+*.log
+coverage/
+.env
+.env.*
