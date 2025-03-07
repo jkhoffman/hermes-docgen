@@ -15,6 +15,7 @@
 
 ## Testing Approach
 - `pnpm test` - Run all tests
+- `pnpm test:coverage` - Run tests with coverage report
 - `pnpm vitest run <test-file>` - Run a specific test file
 - **Methodology**: Follow Test-Driven Development (TDD) approach
 - **Coverage**: Aim for high test coverage of core functionality
