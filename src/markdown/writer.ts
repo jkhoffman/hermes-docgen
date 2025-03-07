@@ -1,6 +1,6 @@
-import fs from "fs";
-import path from "path";
-import { Result, err, ok } from "neverthrow";
+import fs from "node:fs";
+import path from "node:path";
+import { type Result, err, ok } from "neverthrow";
 
 /**
  * Error types that can occur during file operations
@@ -20,7 +20,7 @@ export interface WriteOptions {
  * Ensure a directory exists, creating it if necessary
  */
 export async function ensureDirectory(
-	dirPath: string
+	dirPath: string,
 ): Promise<Result<string, FileError>> {
 	try {
 		await fs.promises.mkdir(dirPath, { recursive: true });
@@ -40,7 +40,7 @@ export async function ensureDirectory(
 export async function writeFile(
 	filePath: string,
 	content: string,
-	options: WriteOptions = {}
+	options: WriteOptions = {},
 ): Promise<Result<string, FileError>> {
 	try {
 		// Check if the file exists and we're not overwriting
@@ -48,7 +48,7 @@ export async function writeFile(
 			try {
 				await fs.promises.access(filePath);
 				// If we get here, the file exists
-				
+
 				// If overwrite is false, don't write
 				if (options.overwrite === false) {
 					return ok(filePath); // Return success but don't write
@@ -57,15 +57,15 @@ export async function writeFile(
 				// File doesn't exist, so we'll create it
 			}
 		}
-		
+
 		// Ensure the directory exists
 		const dirPath = path.dirname(filePath);
 		const dirResult = await ensureDirectory(dirPath);
-		
+
 		if (dirResult.isErr()) {
 			return dirResult;
 		}
-		
+
 		// Write the file
 		await fs.promises.writeFile(filePath, content, "utf8");
 		return ok(filePath);
@@ -84,12 +84,12 @@ export async function writeFile(
 export function generateFilePath(
 	outputDir: string,
 	fileName: string,
-	fileExtension = ".md"
+	fileExtension = ".md",
 ): string {
 	// Ensure the fileName has the correct extension
 	const baseName = fileName.endsWith(fileExtension)
 		? fileName
 		: `${fileName}${fileExtension}`;
-	
+
 	return path.join(outputDir, baseName);
 }
