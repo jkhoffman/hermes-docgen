@@ -17,7 +17,8 @@
 		"check:unsafe": "biome check --fix --unsafe src",
 		"test": "vitest run --test-timeout=10000",
 		"test:coverage": "vitest run --coverage",
-		"build": "rimraf dist && tsc"
+		"build": "rimraf dist && tsc",
+		"clean": "rimraf dist"
 	},
 	"keywords": ["ai", "documentation", "typescript"],
 	"author": "Jeffery K. Hoffman <jkhoffman@gmail.com>",
