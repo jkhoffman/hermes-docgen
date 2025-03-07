@@ -85,6 +85,26 @@ export function formatMarkdown(
 }
 
 /**
+ * Format a table of contents subitem section (properties or methods)
+ */
+function formatTocSubItems(
+	parentName: string, 
+	items: { name: string }[], 
+	sectionName: string
+): string {
+	if (items.length === 0) {
+		return "";
+	}
+	
+	let toc = `  - ${sectionName}\n`;
+	for (const item of items) {
+		const itemSlug = getSlug(`${parentName}-${item.name}`);
+		toc += `    - [${item.name}](#${itemSlug})\n`;
+	}
+	return toc;
+}
+
+/**
  * Format a table of contents from documentation items
  * @internal This function is exported for testing purposes only
  */
@@ -130,44 +150,12 @@ export function formatTableOfContents(items: DocItem[], depth: number): string {
 			if (depth > 1) {
 				if (kind === DocItemKind.Class) {
 					const classDoc = item as ClassDoc;
-
-					// Properties
-					if (classDoc.properties.length > 0) {
-						toc += "  - Properties\n";
-						for (const prop of classDoc.properties) {
-							const propSlug = getSlug(`${item.name}-${prop.name}`);
-							toc += `    - [${prop.name}](#${propSlug})\n`;
-						}
-					}
-
-					// Methods
-					if (classDoc.methods.length > 0) {
-						toc += "  - Methods\n";
-						for (const method of classDoc.methods) {
-							const methodSlug = getSlug(`${item.name}-${method.name}`);
-							toc += `    - [${method.name}](#${methodSlug})\n`;
-						}
-					}
+					toc += formatTocSubItems(item.name, classDoc.properties, "Properties");
+					toc += formatTocSubItems(item.name, classDoc.methods, "Methods");
 				} else if (kind === DocItemKind.Interface) {
 					const ifaceDoc = item as InterfaceDoc;
-
-					// Properties
-					if (ifaceDoc.properties.length > 0) {
-						toc += "  - Properties\n";
-						for (const prop of ifaceDoc.properties) {
-							const propSlug = getSlug(`${item.name}-${prop.name}`);
-							toc += `    - [${prop.name}](#${propSlug})\n`;
-						}
-					}
-
-					// Methods
-					if (ifaceDoc.methods.length > 0) {
-						toc += "  - Methods\n";
-						for (const method of ifaceDoc.methods) {
-							const methodSlug = getSlug(`${item.name}-${method.name}`);
-							toc += `    - [${method.name}](#${methodSlug})\n`;
-						}
-					}
+					toc += formatTocSubItems(item.name, ifaceDoc.properties, "Properties");
+					toc += formatTocSubItems(item.name, ifaceDoc.methods, "Methods");
 				}
 			}
 		}
@@ -179,6 +167,34 @@ export function formatTableOfContents(items: DocItem[], depth: number): string {
 }
 
 /**
+ * Creates anchor and header for a documentation item
+ */
+function formatItemHeader(name: string, level = 2): string {
+	return `<a id="${getSlug(name)}"></a>\n\n${"#".repeat(level)} ${name}\n\n`;
+}
+
+/**
+ * Formats a description if present
+ */
+function formatDescription(description?: string): string {
+	return description ? `${description}\n\n` : "";
+}
+
+/**
+ * Formats source location information
+ */
+function formatSourceLocation(location: DocItem["location"]): string {
+	return `### Source\n\n[${path.basename(location.filePath)}:${location.line}](${location.filePath}#L${location.line})\n\n`;
+}
+
+/**
+ * Formats a code block with the provided code
+ */
+function formatCodeBlock(code: string, language = "typescript"): string {
+	return `\`\`\`${language}\n${code}\`\`\`\n\n`;
+}
+
+/**
  * Format a function as Markdown
  * @internal This function is exported for testing purposes only
  */
@@ -186,17 +202,11 @@ export function formatFunction(
 	func: FunctionDoc,
 	options: MarkdownOptions,
 ): string {
-	let markdown = `<a id="${getSlug(func.name)}"></a>\n\n`;
-	markdown += `## ${func.name}\n\n`;
-
-	if (func.description) {
-		markdown += `${func.description}\n\n`;
-	}
+	let markdown = formatItemHeader(func.name);
+	markdown += formatDescription(func.description);
 
 	// Function signature
-	markdown += "```typescript\n";
-	markdown += formatFunctionSignature(func);
-	markdown += "\n```\n\n";
+	markdown += formatCodeBlock(formatFunctionSignature(func));
 
 	// Parameters
 	if (func.parameters.length > 0) {
@@ -209,9 +219,62 @@ export function formatFunction(
 	markdown += `\`${func.returnType}\`\n\n`;
 
 	// Source location
-	markdown += "### Source\n\n";
-	markdown += `[${path.basename(func.location.filePath)}:${func.location.line}](${func.location.filePath}#L${func.location.line})\n\n`;
+	markdown += formatSourceLocation(func.location);
 
+	return markdown;
+}
+
+/**
+ * Format a class declaration as typescript code
+ */
+function formatClassDeclaration(cls: ClassDoc): string {
+	let declaration = `class ${cls.name}`;
+
+	if (cls.typeParameters && cls.typeParameters.length > 0) {
+		declaration += `<${cls.typeParameters.join(", ")}>`;
+	}
+
+	if (cls.extends) {
+		declaration += ` extends ${cls.extends}`;
+	}
+
+	if (cls.implements && cls.implements.length > 0) {
+		declaration += ` implements ${cls.implements.join(", ")}`;
+	}
+
+	declaration += " {\n";
+
+	// Add a placeholder for properties and methods
+	if (
+		cls.properties.length > 0 ||
+		cls.methods.length > 0 ||
+		cls.constructors.length > 0
+	) {
+		declaration += "  // Properties, methods, and constructors\n";
+	}
+
+	declaration += "}\n";
+	
+	return declaration;
+}
+
+/**
+ * Format a collection of items with a section header
+ */
+function formatItemCollection<T>(
+	items: T[], 
+	sectionName: string, 
+	formatter: (item: T) => string
+): string {
+	if (items.length === 0) {
+		return "";
+	}
+	
+	let markdown = `### ${sectionName}\n\n`;
+	for (const item of items) {
+		markdown += formatter(item);
+	}
+	
 	return markdown;
 }
 
@@ -220,75 +283,63 @@ export function formatFunction(
  * @internal This function is exported for testing purposes only
  */
 export function formatClass(cls: ClassDoc, options: MarkdownOptions): string {
-	let markdown = `<a id="${getSlug(cls.name)}"></a>\n\n`;
-	markdown += `## ${cls.name}\n\n`;
-
-	if (cls.description) {
-		markdown += `${cls.description}\n\n`;
-	}
+	let markdown = formatItemHeader(cls.name);
+	markdown += formatDescription(cls.description);
 
 	// Class declaration
-	markdown += "```typescript\n";
-	markdown += `class ${cls.name}`;
-
-	if (cls.typeParameters && cls.typeParameters.length > 0) {
-		markdown += `<${cls.typeParameters.join(", ")}>`;
-	}
-
-	if (cls.extends) {
-		markdown += ` extends ${cls.extends}`;
-	}
-
-	if (cls.implements && cls.implements.length > 0) {
-		markdown += ` implements ${cls.implements.join(", ")}`;
-	}
-
-	markdown += " {\n";
-
-	// Add a placeholder for properties and methods
-	if (
-		cls.properties.length > 0 ||
-		cls.methods.length > 0 ||
-		cls.constructors.length > 0
-	) {
-		markdown += "  // Properties, methods, and constructors\n";
-	}
-
-	markdown += "}\n";
-	markdown += "```\n\n";
+	markdown += formatCodeBlock(formatClassDeclaration(cls));
 
 	// Constructors
-	if (cls.constructors.length > 0) {
-		markdown += "### Constructors\n\n";
-
-		for (const ctor of cls.constructors) {
-			markdown += formatMethod(ctor, cls.name, options);
-		}
-	}
+	markdown += formatItemCollection(
+		cls.constructors, 
+		"Constructors", 
+		ctor => formatMethod(ctor, cls.name, options)
+	);
 
 	// Properties
-	if (cls.properties.length > 0) {
-		markdown += "### Properties\n\n";
-
-		for (const prop of cls.properties) {
-			markdown += formatProperty(prop, cls.name, options);
-		}
-	}
+	markdown += formatItemCollection(
+		cls.properties, 
+		"Properties", 
+		prop => formatProperty(prop, cls.name, options)
+	);
 
 	// Methods
-	if (cls.methods.length > 0) {
-		markdown += "### Methods\n\n";
-
-		for (const method of cls.methods) {
-			markdown += formatMethod(method, cls.name, options);
-		}
-	}
+	markdown += formatItemCollection(
+		cls.methods, 
+		"Methods", 
+		method => formatMethod(method, cls.name, options)
+	);
 
 	// Source location
-	markdown += "### Source\n\n";
-	markdown += `[${path.basename(cls.location.filePath)}:${cls.location.line}](${cls.location.filePath}#L${cls.location.line})\n\n`;
+	markdown += formatSourceLocation(cls.location);
 
 	return markdown;
+}
+
+/**
+ * Format an interface declaration as typescript code
+ */
+function formatInterfaceDeclaration(iface: InterfaceDoc): string {
+	let declaration = `interface ${iface.name}`;
+
+	if (iface.typeParameters && iface.typeParameters.length > 0) {
+		declaration += `<${iface.typeParameters.join(", ")}>`;
+	}
+
+	if (iface.extends && iface.extends.length > 0) {
+		declaration += ` extends ${iface.extends.join(", ")}`;
+	}
+
+	declaration += " {\n";
+
+	// Add a placeholder for properties and methods
+	if (iface.properties.length > 0 || iface.methods.length > 0) {
+		declaration += "  // Properties and methods\n";
+	}
+
+	declaration += "}\n";
+	
+	return declaration;
 }
 
 /**
@@ -299,57 +350,67 @@ export function formatInterface(
 	iface: InterfaceDoc,
 	options: MarkdownOptions,
 ): string {
-	let markdown = `<a id="${getSlug(iface.name)}"></a>\n\n`;
-	markdown += `## ${iface.name}\n\n`;
-
-	if (iface.description) {
-		markdown += `${iface.description}\n\n`;
-	}
+	let markdown = formatItemHeader(iface.name);
+	markdown += formatDescription(iface.description);
 
 	// Interface declaration
-	markdown += "```typescript\n";
-	markdown += `interface ${iface.name}`;
-
-	if (iface.typeParameters && iface.typeParameters.length > 0) {
-		markdown += `<${iface.typeParameters.join(", ")}>`;
-	}
-
-	if (iface.extends && iface.extends.length > 0) {
-		markdown += ` extends ${iface.extends.join(", ")}`;
-	}
-
-	markdown += " {\n";
-
-	// Add a placeholder for properties and methods
-	if (iface.properties.length > 0 || iface.methods.length > 0) {
-		markdown += "  // Properties and methods\n";
-	}
-
-	markdown += "}\n";
-	markdown += "```\n\n";
+	markdown += formatCodeBlock(formatInterfaceDeclaration(iface));
 
 	// Properties
-	if (iface.properties.length > 0) {
-		markdown += "### Properties\n\n";
-
-		for (const prop of iface.properties) {
-			markdown += formatProperty(prop, iface.name, options);
-		}
-	}
+	markdown += formatItemCollection(
+		iface.properties, 
+		"Properties", 
+		prop => formatProperty(prop, iface.name, options)
+	);
 
 	// Methods
-	if (iface.methods.length > 0) {
-		markdown += "### Methods\n\n";
-
-		for (const method of iface.methods) {
-			markdown += formatMethod(method, iface.name, options);
-		}
-	}
+	markdown += formatItemCollection(
+		iface.methods, 
+		"Methods", 
+		method => formatMethod(method, iface.name, options)
+	);
 
 	// Source location
-	markdown += "### Source\n\n";
-	markdown += `[${path.basename(iface.location.filePath)}:${iface.location.line}](${iface.location.filePath}#L${iface.location.line})\n\n`;
+	markdown += formatSourceLocation(iface.location);
 
+	return markdown;
+}
+
+/**
+ * Format an enum declaration as typescript code
+ */
+function formatEnumDeclaration(enumDoc: EnumDoc): string {
+	let declaration = `enum ${enumDoc.name} {\n`;
+
+	for (const member of enumDoc.members) {
+		declaration += `  ${member.name}`;
+
+		if (member.value !== undefined) {
+			declaration += ` = ${member.value}`;
+		}
+
+		declaration += ",\n";
+	}
+
+	declaration += "}\n";
+	
+	return declaration;
+}
+
+/**
+ * Format an enum member
+ */
+function formatEnumMember(member: EnumDoc["members"][0]): string {
+	let markdown = `#### ${member.name}\n\n`;
+
+	if (member.value !== undefined) {
+		markdown += `Value: \`${member.value}\`\n\n`;
+	}
+
+	if (member.description) {
+		markdown += `${member.description}\n\n`;
+	}
+	
 	return markdown;
 }
 
@@ -358,52 +419,38 @@ export function formatInterface(
  * @internal This function is exported for testing purposes only
  */
 export function formatEnum(enumDoc: EnumDoc, options: MarkdownOptions): string {
-	let markdown = `<a id="${getSlug(enumDoc.name)}"></a>\n\n`;
-	markdown += `## ${enumDoc.name}\n\n`;
-
-	if (enumDoc.description) {
-		markdown += `${enumDoc.description}\n\n`;
-	}
+	let markdown = formatItemHeader(enumDoc.name);
+	markdown += formatDescription(enumDoc.description);
 
 	// Enum declaration
-	markdown += "```typescript\n";
-	markdown += `enum ${enumDoc.name} {\n`;
-
-	for (const member of enumDoc.members) {
-		markdown += `  ${member.name}`;
-
-		if (member.value !== undefined) {
-			markdown += ` = ${member.value}`;
-		}
-
-		markdown += ",\n";
-	}
-
-	markdown += "}\n";
-	markdown += "```\n\n";
+	markdown += formatCodeBlock(formatEnumDeclaration(enumDoc));
 
 	// Members
-	if (enumDoc.members.length > 0) {
-		markdown += "### Members\n\n";
-
-		for (const member of enumDoc.members) {
-			markdown += `#### ${member.name}\n\n`;
-
-			if (member.value !== undefined) {
-				markdown += `Value: \`${member.value}\`\n\n`;
-			}
-
-			if (member.description) {
-				markdown += `${member.description}\n\n`;
-			}
-		}
-	}
+	markdown += formatItemCollection(
+		enumDoc.members,
+		"Members",
+		formatEnumMember
+	);
 
 	// Source location
-	markdown += "### Source\n\n";
-	markdown += `[${path.basename(enumDoc.location.filePath)}:${enumDoc.location.line}](${enumDoc.location.filePath}#L${enumDoc.location.line})\n\n`;
+	markdown += formatSourceLocation(enumDoc.location);
 
 	return markdown;
+}
+
+/**
+ * Format a type alias declaration as typescript code
+ */
+function formatTypeAliasDeclaration(typeAlias: TypeAliasDoc): string {
+	let declaration = `type ${typeAlias.name}`;
+
+	if (typeAlias.typeParameters && typeAlias.typeParameters.length > 0) {
+		declaration += `<${typeAlias.typeParameters.join(", ")}>`;
+	}
+
+	declaration += ` = ${typeAlias.type};\n`;
+	
+	return declaration;
 }
 
 /**
@@ -414,29 +461,45 @@ export function formatTypeAlias(
 	typeAlias: TypeAliasDoc,
 	options: MarkdownOptions,
 ): string {
-	let markdown = `<a id="${getSlug(typeAlias.name)}"></a>\n\n`;
-	markdown += `## ${typeAlias.name}\n\n`;
-
-	if (typeAlias.description) {
-		markdown += `${typeAlias.description}\n\n`;
-	}
+	let markdown = formatItemHeader(typeAlias.name);
+	markdown += formatDescription(typeAlias.description);
 
 	// Type alias declaration
-	markdown += "```typescript\n";
-	markdown += `type ${typeAlias.name}`;
-
-	if (typeAlias.typeParameters && typeAlias.typeParameters.length > 0) {
-		markdown += `<${typeAlias.typeParameters.join(", ")}>`;
-	}
-
-	markdown += ` = ${typeAlias.type};\n`;
-	markdown += "```\n\n";
+	markdown += formatCodeBlock(formatTypeAliasDeclaration(typeAlias));
 
 	// Source location
-	markdown += "### Source\n\n";
-	markdown += `[${path.basename(typeAlias.location.filePath)}:${typeAlias.location.line}](${typeAlias.location.filePath}#L${typeAlias.location.line})\n\n`;
+	markdown += formatSourceLocation(typeAlias.location);
 
 	return markdown;
+}
+
+/**
+ * Format a property declaration as typescript code
+ */
+function formatPropertyDeclaration(prop: PropertyDoc, options: MarkdownOptions): string {
+	let declaration = "";
+
+	if (prop.isStatic) {
+		declaration += "static ";
+	}
+
+	if (prop.isReadonly) {
+		declaration += "readonly ";
+	}
+
+	declaration += prop.name;
+
+	if (prop.isOptional) {
+		declaration += "?";
+	}
+
+	if (options.includeTypes) {
+		declaration += `: ${prop.type}`;
+	}
+
+	declaration += ";\n";
+	
+	return declaration;
 }
 
 /**
@@ -448,36 +511,15 @@ export function formatProperty(
 	parentName: string,
 	options: MarkdownOptions,
 ): string {
-	let markdown = `<a id="${getSlug(`${parentName}-${prop.name}`)}"></a>\n\n`;
+	// Create an anchor with parent name for proper linking
+	const anchorId = getSlug(`${parentName}-${prop.name}`);
+	let markdown = `<a id="${anchorId}"></a>\n\n`;
 	markdown += `#### ${prop.name}\n\n`;
-
-	if (prop.description) {
-		markdown += `${prop.description}\n\n`;
-	}
+	
+	markdown += formatDescription(prop.description);
 
 	// Property signature
-	markdown += "```typescript\n";
-
-	if (prop.isStatic) {
-		markdown += "static ";
-	}
-
-	if (prop.isReadonly) {
-		markdown += "readonly ";
-	}
-
-	markdown += prop.name;
-
-	if (prop.isOptional) {
-		markdown += "?";
-	}
-
-	if (options.includeTypes) {
-		markdown += `: ${prop.type}`;
-	}
-
-	markdown += ";\n";
-	markdown += "```\n\n";
+	markdown += formatCodeBlock(formatPropertyDeclaration(prop, options));
 
 	return markdown;
 }
@@ -491,25 +533,23 @@ export function formatMethod(
 	parentName: string,
 	options: MarkdownOptions,
 ): string {
-	let markdown = `<a id="${getSlug(`${parentName}-${method.name}`)}"></a>\n\n`;
+	// Create an anchor with parent name for proper linking
+	const anchorId = getSlug(`${parentName}-${method.name}`);
+	let markdown = `<a id="${anchorId}"></a>\n\n`;
 	markdown += `#### ${method.name}\n\n`;
-
-	if (method.description) {
-		markdown += `${method.description}\n\n`;
-	}
+	
+	markdown += formatDescription(method.description);
 
 	// Method signature
-	markdown += "```typescript\n";
-	markdown += formatMethodSignature(method);
-	markdown += "\n```\n\n";
+	markdown += formatCodeBlock(formatMethodSignature(method));
 
-	// Parameters
+	// Parameters - use H5 for parameter section
 	if (method.parameters.length > 0) {
 		markdown += "##### Parameters\n\n";
 		markdown += formatParameters(method.parameters, options);
 	}
 
-	// Return type
+	// Return type - use H5 for return section
 	markdown += "##### Returns\n\n";
 	markdown += `\`${method.returnType}\`\n\n`;
 

@@ -1,10 +1,10 @@
-import { Project, SourceFile } from "ts-morph";
-import { Result, err, ok } from "neverthrow";
+import { type Result, err, ok } from "neverthrow";
+import { Project, type SourceFile } from "ts-morph";
 
 /**
  * Error types that can occur during TypeScript parsing
  */
-export type ParserError = 
+export type ParserError =
 	| { type: "file_not_found"; file: string }
 	| { type: "invalid_pattern"; pattern: string }
 	| { type: "typescript_error"; details: string };
@@ -22,7 +22,7 @@ export interface ParserOptions {
  */
 export class TypeScriptParser {
 	private project: Project;
-	
+
 	constructor(options: ParserOptions = {}) {
 		this.project = new Project({
 			tsConfigFilePath: options.tsConfigFilePath,
@@ -30,12 +30,12 @@ export class TypeScriptParser {
 			skipFileDependencyResolution: options.skipNodeModules ?? true,
 		});
 	}
-	
+
 	/**
 	 * Add source files from glob patterns
 	 */
 	public async addSourceFiles(
-		patterns: string[]
+		patterns: string[],
 	): Promise<Result<SourceFile[], ParserError>> {
 		try {
 			const files = this.project.addSourceFilesAtPaths(patterns);
@@ -47,14 +47,14 @@ export class TypeScriptParser {
 			});
 		}
 	}
-	
+
 	/**
 	 * Get all source files in the project
 	 */
 	public getSourceFiles(): SourceFile[] {
 		return this.project.getSourceFiles();
 	}
-	
+
 	/**
 	 * Get a specific source file by path
 	 */
@@ -68,12 +68,14 @@ export class TypeScriptParser {
 		}
 		return ok(file);
 	}
-	
+
 	/**
 	 * Check if there are any compiler errors
 	 */
 	public getCompilerErrors(): string[] {
 		const diagnostics = this.project.getPreEmitDiagnostics();
-		return diagnostics.map(diagnostic => diagnostic.getMessageText().toString());
+		return diagnostics.map((diagnostic) =>
+			diagnostic.getMessageText().toString(),
+		);
 	}
 }

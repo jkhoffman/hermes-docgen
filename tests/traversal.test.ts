@@ -23,7 +23,8 @@ import {
 	extractDocumentation,
 	extractJSDocInfo,
 	extractParameterDoc,
-	extractParameterDescription
+	extractParameterDescription,
+	extractParametersWithJSDoc
 } from "../src/parser/traversal";
 
 // Helper to create a source file from code
@@ -438,6 +439,74 @@ describe("traversal.ts", () => {
 			const result = extractParameterDoc(param);
 			
 			expect(result.type).toMatch(/string \| number \| \{.+\}/);
+		});
+	});
+	
+	describe("extractParametersWithJSDoc", () => {
+		it("should extract parameters with JSDoc descriptions", () => {
+			// Create a function with JSDoc parameter descriptions
+			const sourceFile = createSourceFile(`
+				/**
+				 * Test function with parameter descriptions
+				 * @param first The first parameter
+				 * @param second The second parameter with more details
+				 * @returns The return value
+				 */
+				function test(first: string, second: number) {
+					return first + second;
+				}
+			`);
+			
+			const func = sourceFile.getFunction("test");
+			if (!func) {
+				throw new Error("Function not found in test code");
+			}
+			
+			// Get parameters and JSDoc
+			const params = func.getParameters();
+			const jsDocs = func.getJsDocs();
+			const jsDocInfo = extractJSDocInfo(jsDocs);
+			
+			// Test our new function
+			const result = extractParametersWithJSDoc(params, jsDocs, jsDocInfo);
+			expect(result.length).toBe(2);
+			
+			// Check parameter descriptions were extracted
+			expect(result[0].name).toBe("first");
+			expect(result[0].description).toBe("The first parameter");
+			expect(result[1].name).toBe("second");
+			expect(result[1].description).toBe("The second parameter with more details");
+		});
+		
+		it("should handle missing JSDoc descriptions", () => {
+			// Create a function without JSDoc parameter descriptions
+			const sourceFile = createSourceFile(`
+				function test(first: string, second: number) {
+					return first + second;
+				}
+			`);
+			
+			const func = sourceFile.getFunction("test");
+			if (!func) {
+				throw new Error("Function not found in test code");
+			}
+			
+			// Get parameters and JSDoc
+			const params = func.getParameters();
+			const jsDocs = func.getJsDocs();
+			const jsDocInfo = extractJSDocInfo(jsDocs);
+			
+			// Test our new function
+			const result = extractParametersWithJSDoc(params, jsDocs, jsDocInfo);
+			expect(result.length).toBe(2);
+			
+			// Check parameter descriptions are empty but other info is present
+			expect(result[0].name).toBe("first");
+			expect(result[0].description).toBe("");
+			expect(result[0].type).toBe("string");
+			expect(result[1].name).toBe("second");
+			expect(result[1].description).toBe("");
+			expect(result[1].type).toBe("number");
 		});
 	});
 });
