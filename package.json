@@ -14,13 +14,9 @@
 		"check:fix": "biome check --fix src",
 		"check:unsafe": "biome check --fix --unsafe src",
 		"test": "vitest run",
-		"build": "tsc"
+		"build": "rimraf dist && tsc"
 	},
-	"keywords": [
-		"ai",
-		"documentation",
-		"typescript"
-	],
+	"keywords": ["ai", "documentation", "typescript"],
 	"author": "Jeffery K. Hoffman <jkhoffman@gmail.com>",
 	"license": "ISC",
 	"packageManager": "pnpm@10.5.2",
@@ -33,6 +29,7 @@
 		"comment-parser": "^1.4.1",
 		"cosmiconfig": "^9.0.0",
 		"dotenv": "^16.4.7",
+		"lodash": "^4.17.21",
 		"neverthrow": "^8.2.0",
 		"ts-morph": "^25.0.1",
 		"zod": "^3.24.2"
@@ -44,13 +41,12 @@
 		"fs-extra": "^11.3.0",
 		"ora": "^8.2.0",
 		"picocolors": "^1.1.1",
+		"rimraf": "^6.0.1",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.2",
 		"vitest": "^3.0.8"
 	},
 	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@biomejs/biome"
-		]
+		"onlyBuiltDependencies": ["@biomejs/biome"]
 	}
 }

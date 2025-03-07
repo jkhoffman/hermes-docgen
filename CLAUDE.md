@@ -28,6 +28,7 @@
 - **Functions**: Prefer pure functions with explicit inputs and outputs
 - **Dependency Injection**: Use DI pattern where appropriate to improve testability
 - **Testing**: Design components with testing in mind, avoid hard-to-test implementations
+- **Utilize dependencies**: Fully utilize project dependencies to avoid unnecessary effort
 
 ## Project Overview
 Hermes is an AI-powered documentation generator for TypeScript projects that creates comprehensive Markdown documentation using modern AI capabilities.
