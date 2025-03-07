@@ -88,14 +88,14 @@ export function formatMarkdown(
  * Format a table of contents subitem section (properties or methods)
  */
 function formatTocSubItems(
-	parentName: string, 
-	items: { name: string }[], 
-	sectionName: string
+	parentName: string,
+	items: { name: string }[],
+	sectionName: string,
 ): string {
 	if (items.length === 0) {
 		return "";
 	}
-	
+
 	let toc = `  - ${sectionName}\n`;
 	for (const item of items) {
 		const itemSlug = getSlug(`${parentName}-${item.name}`);
@@ -135,7 +135,7 @@ export function formatTableOfContents(items: DocItem[], depth: number): string {
 		if (!kindGroups.has(item.kind)) {
 			kindGroups.set(item.kind, []);
 		}
-		kindGroups.get(item.kind)!.push(item);
+		kindGroups.get(item.kind)?.push(item);
 	}
 
 	// Generate TOC for each kind
@@ -150,11 +150,19 @@ export function formatTableOfContents(items: DocItem[], depth: number): string {
 			if (depth > 1) {
 				if (kind === DocItemKind.Class) {
 					const classDoc = item as ClassDoc;
-					toc += formatTocSubItems(item.name, classDoc.properties, "Properties");
+					toc += formatTocSubItems(
+						item.name,
+						classDoc.properties,
+						"Properties",
+					);
 					toc += formatTocSubItems(item.name, classDoc.methods, "Methods");
 				} else if (kind === DocItemKind.Interface) {
 					const ifaceDoc = item as InterfaceDoc;
-					toc += formatTocSubItems(item.name, ifaceDoc.properties, "Properties");
+					toc += formatTocSubItems(
+						item.name,
+						ifaceDoc.properties,
+						"Properties",
+					);
 					toc += formatTocSubItems(item.name, ifaceDoc.methods, "Methods");
 				}
 			}
@@ -254,7 +262,7 @@ function formatClassDeclaration(cls: ClassDoc): string {
 	}
 
 	declaration += "}\n";
-	
+
 	return declaration;
 }
 
@@ -262,19 +270,19 @@ function formatClassDeclaration(cls: ClassDoc): string {
  * Format a collection of items with a section header
  */
 function formatItemCollection<T>(
-	items: T[], 
-	sectionName: string, 
-	formatter: (item: T) => string
+	items: T[],
+	sectionName: string,
+	formatter: (item: T) => string,
 ): string {
 	if (items.length === 0) {
 		return "";
 	}
-	
+
 	let markdown = `### ${sectionName}\n\n`;
 	for (const item of items) {
 		markdown += formatter(item);
 	}
-	
+
 	return markdown;
 }
 
@@ -290,24 +298,18 @@ export function formatClass(cls: ClassDoc, options: MarkdownOptions): string {
 	markdown += formatCodeBlock(formatClassDeclaration(cls));
 
 	// Constructors
-	markdown += formatItemCollection(
-		cls.constructors, 
-		"Constructors", 
-		ctor => formatMethod(ctor, cls.name, options)
+	markdown += formatItemCollection(cls.constructors, "Constructors", (ctor) =>
+		formatMethod(ctor, cls.name, options),
 	);
 
 	// Properties
-	markdown += formatItemCollection(
-		cls.properties, 
-		"Properties", 
-		prop => formatProperty(prop, cls.name, options)
+	markdown += formatItemCollection(cls.properties, "Properties", (prop) =>
+		formatProperty(prop, cls.name, options),
 	);
 
 	// Methods
-	markdown += formatItemCollection(
-		cls.methods, 
-		"Methods", 
-		method => formatMethod(method, cls.name, options)
+	markdown += formatItemCollection(cls.methods, "Methods", (method) =>
+		formatMethod(method, cls.name, options),
 	);
 
 	// Source location
@@ -338,7 +340,7 @@ function formatInterfaceDeclaration(iface: InterfaceDoc): string {
 	}
 
 	declaration += "}\n";
-	
+
 	return declaration;
 }
 
@@ -357,17 +359,13 @@ export function formatInterface(
 	markdown += formatCodeBlock(formatInterfaceDeclaration(iface));
 
 	// Properties
-	markdown += formatItemCollection(
-		iface.properties, 
-		"Properties", 
-		prop => formatProperty(prop, iface.name, options)
+	markdown += formatItemCollection(iface.properties, "Properties", (prop) =>
+		formatProperty(prop, iface.name, options),
 	);
 
 	// Methods
-	markdown += formatItemCollection(
-		iface.methods, 
-		"Methods", 
-		method => formatMethod(method, iface.name, options)
+	markdown += formatItemCollection(iface.methods, "Methods", (method) =>
+		formatMethod(method, iface.name, options),
 	);
 
 	// Source location
@@ -393,7 +391,7 @@ function formatEnumDeclaration(enumDoc: EnumDoc): string {
 	}
 
 	declaration += "}\n";
-	
+
 	return declaration;
 }
 
@@ -410,7 +408,7 @@ function formatEnumMember(member: EnumDoc["members"][0]): string {
 	if (member.description) {
 		markdown += `${member.description}\n\n`;
 	}
-	
+
 	return markdown;
 }
 
@@ -429,7 +427,7 @@ export function formatEnum(enumDoc: EnumDoc, options: MarkdownOptions): string {
 	markdown += formatItemCollection(
 		enumDoc.members,
 		"Members",
-		formatEnumMember
+		formatEnumMember,
 	);
 
 	// Source location
@@ -449,7 +447,7 @@ function formatTypeAliasDeclaration(typeAlias: TypeAliasDoc): string {
 	}
 
 	declaration += ` = ${typeAlias.type};\n`;
-	
+
 	return declaration;
 }
 
@@ -476,7 +474,10 @@ export function formatTypeAlias(
 /**
  * Format a property declaration as typescript code
  */
-function formatPropertyDeclaration(prop: PropertyDoc, options: MarkdownOptions): string {
+function formatPropertyDeclaration(
+	prop: PropertyDoc,
+	options: MarkdownOptions,
+): string {
 	let declaration = "";
 
 	if (prop.isStatic) {
@@ -498,7 +499,7 @@ function formatPropertyDeclaration(prop: PropertyDoc, options: MarkdownOptions):
 	}
 
 	declaration += ";\n";
-	
+
 	return declaration;
 }
 
@@ -515,7 +516,7 @@ export function formatProperty(
 	const anchorId = getSlug(`${parentName}-${prop.name}`);
 	let markdown = `<a id="${anchorId}"></a>\n\n`;
 	markdown += `#### ${prop.name}\n\n`;
-	
+
 	markdown += formatDescription(prop.description);
 
 	// Property signature
@@ -537,7 +538,7 @@ export function formatMethod(
 	const anchorId = getSlug(`${parentName}-${method.name}`);
 	let markdown = `<a id="${anchorId}"></a>\n\n`;
 	markdown += `#### ${method.name}\n\n`;
-	
+
 	markdown += formatDescription(method.description);
 
 	// Method signature

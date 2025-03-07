@@ -86,7 +86,7 @@ export class DocumentationGenerator {
 				fileGroups.set(fileName, []);
 			}
 
-			fileGroups.get(fileName)!.push(item);
+			fileGroups.get(fileName)?.push(item);
 		}
 
 		// Generate output files

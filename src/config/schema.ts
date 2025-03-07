@@ -8,27 +8,31 @@ export const ConfigSchema = z.object({
 	outDir: z.string().default("./docs"),
 	include: z.array(z.string()).default(["src/**/*.ts"]),
 	exclude: z.array(z.string()).default(["**/*.test.ts", "**/*.spec.ts"]),
-	
+
 	// Documentation options
 	title: z.string().default("API Documentation"),
 	description: z.string().optional(),
-	
+
 	// Generation options
-	markdownOptions: z.object({
-		tocDepth: z.number().int().min(1).max(6).default(3),
-		linkReferences: z.boolean().default(true),
-		includeTypes: z.boolean().default(true),
-		includeExamples: z.boolean().default(true),
-	}).default({}),
-	
+	markdownOptions: z
+		.object({
+			tocDepth: z.number().int().min(1).max(6).default(3),
+			linkReferences: z.boolean().default(true),
+			includeTypes: z.boolean().default(true),
+			includeExamples: z.boolean().default(true),
+		})
+		.default({}),
+
 	// AI options
-	ai: z.object({
-		enabled: z.boolean().default(true),
-		provider: z.enum(["openai", "anthropic", "google"]).default("openai"),
-		model: z.string().optional(),
-		enhanceComments: z.boolean().default(true),
-		generateExamples: z.boolean().default(false),
-	}).default({}),
+	ai: z
+		.object({
+			enabled: z.boolean().default(true),
+			provider: z.enum(["openai", "anthropic", "google"]).default("openai"),
+			model: z.string().optional(),
+			enhanceComments: z.boolean().default(true),
+			generateExamples: z.boolean().default(false),
+		})
+		.default({}),
 });
 
 /**

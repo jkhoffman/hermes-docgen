@@ -1,4 +1,5 @@
-import {
+import { parse as parseJSDoc } from "comment-parser";
+import type {
 	ClassDeclaration,
 	EnumDeclaration,
 	FunctionDeclaration,
@@ -10,7 +11,6 @@ import {
 	SourceFile,
 	TypeAliasDeclaration,
 } from "ts-morph";
-import { parse as parseJSDoc } from "comment-parser";
 
 /**
  * Base interface for all documentation items
@@ -152,12 +152,12 @@ export interface ParameterDoc extends DocItem {
 export function extractParametersWithJSDoc(
 	parameters: ParameterDeclaration[],
 	jsDocs: JSDoc[] | undefined,
-	jsDocInfo: JSDocInfo | undefined
+	jsDocInfo: JSDocInfo | undefined,
 ): ParameterDoc[] {
-	return parameters.map(param => {
+	return parameters.map((param) => {
 		// Get basic parameter info
 		const paramDoc = extractParameterDoc(param);
-		
+
 		// Extract description from JSDoc
 		const description = extractParameterDescription(param, jsDocs);
 		if (description) {
@@ -166,13 +166,13 @@ export function extractParametersWithJSDoc(
 		// Fallback to using the parsed JSDoc info if direct method didn't work
 		else if (jsDocInfo?.tags) {
 			const paramTag = jsDocInfo.tags.find(
-				tag => tag.tag === "param" && tag.name === param.getName()
+				(tag) => tag.tag === "param" && tag.name === param.getName(),
 			);
 			if (paramTag?.description) {
 				paramDoc.description = paramTag.description;
 			}
 		}
-		
+
 		return paramDoc;
 	});
 }
@@ -180,7 +180,10 @@ export function extractParametersWithJSDoc(
 /**
  * Creates a location object for a node
  */
-function createLocationInfo(node: { getSourceFile(): SourceFile; getStartLineNumber(): number }) {
+function createLocationInfo(node: {
+	getSourceFile(): SourceFile;
+	getStartLineNumber(): number;
+}) {
 	return {
 		filePath: node.getSourceFile().getFilePath(),
 		line: node.getStartLineNumber(),
@@ -194,14 +197,14 @@ function extractFunctionDoc(func: FunctionDeclaration): FunctionDoc {
 	// Get JSDoc comments
 	const jsDocs = func.getJsDocs();
 	const jsDocInfo = extractJSDocInfo(jsDocs);
-	
+
 	// Extract parameters with JSDoc descriptions
 	const parameters = extractParametersWithJSDoc(
 		func.getParameters(),
 		jsDocs,
-		jsDocInfo
+		jsDocInfo,
 	);
-	
+
 	return {
 		name: func.getName() || "anonymous",
 		kind: DocItemKind.Function,
@@ -210,7 +213,7 @@ function extractFunctionDoc(func: FunctionDeclaration): FunctionDoc {
 		jsDoc: jsDocInfo,
 		parameters,
 		returnType: func.getReturnType().getText(),
-		typeParameters: func.getTypeParameters().map(tp => tp.getText()),
+		typeParameters: func.getTypeParameters().map((tp) => tp.getText()),
 	} as FunctionDoc;
 }
 
@@ -238,14 +241,14 @@ function extractMethodDoc(method: MethodDeclaration): MethodDoc {
 	// Get JSDoc comments
 	const methodJsDocs = method.getJsDocs();
 	const methodJsDocInfo = extractJSDocInfo(methodJsDocs);
-	
+
 	// Extract parameters with JSDoc descriptions
 	const parameters = extractParametersWithJSDoc(
 		method.getParameters(),
 		methodJsDocs,
-		methodJsDocInfo
+		methodJsDocInfo,
 	);
-	
+
 	return {
 		name: method.getName(),
 		kind: DocItemKind.Method,
@@ -256,25 +259,28 @@ function extractMethodDoc(method: MethodDeclaration): MethodDoc {
 		returnType: method.getReturnType().getText(),
 		isStatic: method.isStatic(),
 		isAsync: method.isAsync(),
-		typeParameters: method.getTypeParameters().map(tp => tp.getText()),
+		typeParameters: method.getTypeParameters().map((tp) => tp.getText()),
 	} as MethodDoc;
 }
 
 /**
  * Extract documentation for a class constructor
  */
-function extractConstructorDoc(ctor: MethodDeclaration, className: string): MethodDoc {
+function extractConstructorDoc(
+	ctor: MethodDeclaration,
+	className: string,
+): MethodDoc {
 	// Get JSDoc comments for constructor
 	const ctorJsDocs = ctor.getJsDocs();
 	const ctorJsDocInfo = extractJSDocInfo(ctorJsDocs);
-	
+
 	// Extract parameters with JSDoc descriptions
 	const parameters = extractParametersWithJSDoc(
 		ctor.getParameters(),
 		ctorJsDocs,
-		ctorJsDocInfo
+		ctorJsDocInfo,
 	);
-	
+
 	return {
 		name: "constructor",
 		kind: DocItemKind.Method,
@@ -294,10 +300,10 @@ function extractConstructorDoc(ctor: MethodDeclaration, className: string): Meth
 function extractClassDoc(cls: ClassDeclaration): ClassDoc {
 	const properties = cls.getProperties().map(extractPropertyDoc);
 	const methods = cls.getMethods().map(extractMethodDoc);
-	const constructors = cls.getConstructors().map(ctor => 
-		extractConstructorDoc(ctor, cls.getName())
-	);
-	
+	const constructors = cls
+		.getConstructors()
+		.map((ctor) => extractConstructorDoc(ctor, cls.getName()));
+
 	return {
 		name: cls.getName(),
 		kind: DocItemKind.Class,
@@ -308,8 +314,8 @@ function extractClassDoc(cls: ClassDeclaration): ClassDoc {
 		methods,
 		constructors,
 		extends: cls.getExtends()?.getText(),
-		implements: cls.getImplements().map(impl => impl.getText()),
-		typeParameters: cls.getTypeParameters().map(tp => tp.getText()),
+		implements: cls.getImplements().map((impl) => impl.getText()),
+		typeParameters: cls.getTypeParameters().map((tp) => tp.getText()),
 	} as ClassDoc;
 }
 
@@ -317,14 +323,14 @@ function extractClassDoc(cls: ClassDeclaration): ClassDoc {
  * Extract documentation for an enum declaration
  */
 function extractEnumDoc(enumDecl: EnumDeclaration): EnumDoc {
-	const members = enumDecl.getMembers().map(member => {
+	const members = enumDecl.getMembers().map((member) => {
 		return {
 			name: member.getName(),
 			value: member.getValue()?.toString(),
 			description: member.getJsDocs()?.[0]?.getDescription()?.trim(),
 		};
 	});
-	
+
 	return {
 		name: enumDecl.getName(),
 		kind: DocItemKind.Enum,
@@ -346,7 +352,7 @@ function extractTypeAliasDoc(typeAlias: TypeAliasDeclaration): TypeAliasDoc {
 		location: createLocationInfo(typeAlias),
 		jsDoc: extractJSDocInfo(typeAlias.getJsDocs()),
 		type: typeAlias.getType().getText(),
-		typeParameters: typeAlias.getTypeParameters().map(tp => tp.getText()),
+		typeParameters: typeAlias.getTypeParameters().map((tp) => tp.getText()),
 	} as TypeAliasDoc;
 }
 
@@ -356,7 +362,7 @@ function extractTypeAliasDoc(typeAlias: TypeAliasDeclaration): TypeAliasDoc {
 function extractInterfaceDoc(iface: InterfaceDeclaration): InterfaceDoc {
 	const properties = extractInterfaceProperties(iface);
 	const methods = extractInterfaceMethods(iface);
-	
+
 	return {
 		name: iface.getName(),
 		kind: DocItemKind.Interface,
@@ -365,8 +371,8 @@ function extractInterfaceDoc(iface: InterfaceDeclaration): InterfaceDoc {
 		jsDoc: extractJSDocInfo(iface.getJsDocs()),
 		properties,
 		methods,
-		extends: iface.getExtends().map(ext => ext.getText()),
-		typeParameters: iface.getTypeParameters().map(tp => tp.getText()),
+		extends: iface.getExtends().map((ext) => ext.getText()),
+		typeParameters: iface.getTypeParameters().map((tp) => tp.getText()),
 	} as InterfaceDoc;
 }
 
@@ -376,40 +382,42 @@ function extractInterfaceDoc(iface: InterfaceDeclaration): InterfaceDoc {
  */
 export function extractDocumentation(sourceFile: SourceFile): DocItem[] {
 	const items: DocItem[] = [];
-	
+
 	// Extract functions
 	for (const func of sourceFile.getFunctions()) {
 		items.push(extractFunctionDoc(func));
 	}
-	
+
 	// Extract classes
 	for (const cls of sourceFile.getClasses()) {
 		items.push(extractClassDoc(cls));
 	}
-	
+
 	// Extract interfaces
 	for (const iface of sourceFile.getInterfaces()) {
 		items.push(extractInterfaceDoc(iface));
 	}
-	
+
 	// Extract enums
 	for (const enumDecl of sourceFile.getEnums()) {
 		items.push(extractEnumDoc(enumDecl));
 	}
-	
+
 	// Extract type aliases
 	for (const typeAlias of sourceFile.getTypeAliases()) {
 		items.push(extractTypeAliasDoc(typeAlias));
 	}
-	
+
 	return items;
 }
 
 /**
  * Extract interface properties
  */
-function extractInterfaceProperties(iface: InterfaceDeclaration): PropertyDoc[] {
-	return iface.getProperties().map(prop => {
+function extractInterfaceProperties(
+	iface: InterfaceDeclaration,
+): PropertyDoc[] {
+	return iface.getProperties().map((prop) => {
 		return {
 			name: prop.getName(),
 			kind: DocItemKind.Property,
@@ -431,18 +439,18 @@ function extractInterfaceProperties(iface: InterfaceDeclaration): PropertyDoc[] 
  * Extract interface methods
  */
 function extractInterfaceMethods(iface: InterfaceDeclaration): MethodDoc[] {
-	return iface.getMethods().map(method => {
+	return iface.getMethods().map((method) => {
 		// Get JSDoc comments for the method
 		const methodJsDocs = method.getJsDocs();
 		const methodJsDocInfo = extractJSDocInfo(methodJsDocs);
-		
+
 		// Extract parameters with JSDoc descriptions
 		const parameters = extractParametersWithJSDoc(
 			method.getParameters(),
 			methodJsDocs,
-			methodJsDocInfo
+			methodJsDocInfo,
 		);
-		
+
 		return {
 			name: method.getName(),
 			kind: DocItemKind.Method,
@@ -456,7 +464,7 @@ function extractInterfaceMethods(iface: InterfaceDeclaration): MethodDoc[] {
 			returnType: method.getReturnType().getText(),
 			isStatic: false,
 			isAsync: false, // Interface methods cannot be async
-			typeParameters: method.getTypeParameters().map(tp => tp.getText()),
+			typeParameters: method.getTypeParameters().map((tp) => tp.getText()),
 		} as MethodDoc;
 	});
 }
@@ -481,35 +489,38 @@ export function extractParameterDoc(param: ParameterDeclaration): ParameterDoc {
 }
 
 // Pre-compile the parameter regex pattern for better performance
-const PARAM_REGEX_BASE = `(?:@param\\s+)?($1)\\b\\s*(.+)?`;
+const PARAM_REGEX_BASE = "(?:@param\\s+)?($1)\\b\\s*(.+)?";
 
 /**
  * Extracts parameter description from JSDoc tags
  * @internal This function is exported for testing purposes only
  */
-export function extractParameterDescription(param: ParameterDeclaration, jsDocs: JSDoc[] | undefined): string {
+export function extractParameterDescription(
+	param: ParameterDeclaration,
+	jsDocs: JSDoc[] | undefined,
+): string {
 	if (!jsDocs || jsDocs.length === 0) {
 		return "";
 	}
-	
+
 	const paramName = param.getName();
-	
+
 	// Create the regex pattern for this specific parameter name
 	const paramRegex = new RegExp(PARAM_REGEX_BASE.replace("$1", paramName), "i");
-	
+
 	// Look through each JSDoc block
 	for (const jsDoc of jsDocs) {
 		// Get the tags
 		const tags = jsDoc.getTags();
-		
+
 		// Look for a @param tag that matches this parameter
 		for (const tag of tags) {
 			if (tag.getTagName() === "param") {
 				const tagText = tag.getText();
-				
+
 				// Extract the parameter name from the tag text
 				const match = tagText.match(paramRegex);
-				
+
 				if (match && match[1] === paramName) {
 					try {
 						// Try to get the comment using the tag's getComment() method
@@ -517,7 +528,7 @@ export function extractParameterDescription(param: ParameterDeclaration, jsDocs:
 						if (comment) {
 							return comment.trim();
 						}
-						
+
 						// If no getComment or it returned empty, but we matched in the regex
 						if (match[2]) {
 							return match[2].trim();
@@ -532,7 +543,7 @@ export function extractParameterDescription(param: ParameterDeclaration, jsDocs:
 			}
 		}
 	}
-	
+
 	return "";
 }
 
@@ -543,21 +554,23 @@ const PARAM_NAME_REGEX = /^(\w+)(?:\s+.*)?$/;
  * Parse JSDoc comments into structured information
  * @internal This function is exported for testing purposes only
  */
-export function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undefined {
+export function extractJSDocInfo(
+	jsDocs: JSDoc[] | undefined,
+): JSDocInfo | undefined {
 	if (!jsDocs || jsDocs.length === 0) {
 		return undefined;
 	}
-	
+
 	// Get the first JSDoc comment
 	const jsDoc = jsDocs[0];
 	const commentText = jsDoc.getDescription();
-	
+
 	// Extract tags directly from ts-morph
 	const tags: JSDocTag[] = [];
-	
+
 	for (const tag of jsDoc.getTags()) {
 		const tagName = tag.getTagName();
-		
+
 		// Extract comment in a safe way with fallbacks
 		let comment = "";
 		try {
@@ -573,11 +586,11 @@ export function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undef
 				comment = tagText.trim();
 			}
 		}
-		
+
 		if (tagName === "param") {
 			const tagText = tag.getText();
 			const paramMatch = tagText.match(PARAM_NAME_REGEX);
-			
+
 			if (paramMatch) {
 				const paramName = paramMatch[1];
 				tags.push({
@@ -601,7 +614,7 @@ export function extractJSDocInfo(jsDocs: JSDoc[] | undefined): JSDocInfo | undef
 			});
 		}
 	}
-	
+
 	return {
 		description: commentText,
 		tags,

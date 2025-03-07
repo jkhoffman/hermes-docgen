@@ -25,15 +25,15 @@ program
 	.option("-c, --config <file>", "Path to config file")
 	.action(async (patterns, options) => {
 		console.log("Generating documentation for:", patterns);
-		
+
 		try {
 			// Load configuration
 			const { loadConfig } = await import("./config");
-			const configResult = await loadConfig({ 
+			const configResult = await loadConfig({
 				configPath: options.config,
-				cwd: process.cwd() 
+				cwd: process.cwd(),
 			});
-			
+
 			if (configResult.isErr()) {
 				const error = configResult.error;
 				switch (error.type) {
@@ -49,20 +49,20 @@ program
 				}
 				process.exit(1);
 			}
-			
+
 			const config = configResult.value;
-			
+
 			// Override config with CLI options
 			if (options.output) {
 				config.outDir = options.output;
 			}
-			
+
 			// Generate documentation
 			const { DocumentationGenerator } = await import("./generator");
 			const generator = new DocumentationGenerator(config);
-			
+
 			const result = await generator.generate(patterns);
-			
+
 			if (result.isErr()) {
 				const error = result.error;
 				switch (error.type) {
@@ -70,15 +70,19 @@ program
 						console.error("Error parsing TypeScript files:", error.details);
 						break;
 					case "output_error":
-						console.error(`Error writing output file ${error.path}:`, error.details);
+						console.error(
+							`Error writing output file ${error.path}:`,
+							error.details,
+						);
 						break;
 				}
 				process.exit(1);
 			}
-			
+
 			const files = result.value;
-			console.log(`Documentation generated successfully. ${files.length} files written.`);
-			
+			console.log(
+				`Documentation generated successfully. ${files.length} files written.`,
+			);
 		} catch (error) {
 			console.error("Error generating documentation:", error);
 			process.exit(1);
@@ -92,37 +96,38 @@ program
 	.option("-f, --force", "Overwrite existing configuration")
 	.action(async (options) => {
 		console.log("Initializing Hermes configuration");
-		
+
 		try {
-			const fs = await import("fs/promises");
-			const path = await import("path");
-			
+			const fs = await import("node:fs/promises");
+			const path = await import("node:path");
+
 			const configFile = path.join(process.cwd(), ".hermesrc.json");
-			
+
 			// Check if the file already exists
 			try {
 				await fs.access(configFile);
-				
+
 				if (!options.force) {
-					console.error("Configuration file already exists. Use --force to overwrite.");
+					console.error(
+						"Configuration file already exists. Use --force to overwrite.",
+					);
 					process.exit(1);
 				}
 			} catch {
 				// File doesn't exist, we can create it
 			}
-			
+
 			// Import the default config
 			const { defaultConfig } = await import("./config");
-			
+
 			// Write the config file
 			await fs.writeFile(
 				configFile,
 				JSON.stringify(defaultConfig, null, 2),
-				"utf8"
+				"utf8",
 			);
-			
+
 			console.log(`Configuration file created at ${configFile}`);
-			
 		} catch (error) {
 			console.error("Error initializing configuration:", error);
 			process.exit(1);
