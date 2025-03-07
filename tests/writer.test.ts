@@ -202,7 +202,7 @@ describe("Markdown Writer", () => {
 
 		// This will likely fail with permission error
 		if (result.isErr()) {
-			expect(result.error.type).toBe("path_creation_failed");
+			expect(result.error.type).toBe("write_failed");
 			expect(result.error.path).toBe(filePath);
 		}
 	});
